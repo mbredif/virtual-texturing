@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="iso-8859-15">
+    <title>Virtual Textures | Log Map</title>
+
+    <link rel="stylesheet" type="text/css" href="examples/css/main.css">
+  </head>
+
+  <body>
+
+    <div class="container background">
+      <div class="header"></div>
+      <div class="content">
+        <div id="canvas_container"></div>
+      </div>
+    </div>
+
+    <script type="module">
+      import { PlaneGeometry, WebGLRenderer, OrthographicCamera, Scene, Mesh } from './examples/jsm/three.module.js';
+      import { VirtualTexture } from './src/VirtualTexture.js';
+
+      var config = {
+        maxMipMapLevel: 10,
+        minMipMapLevel: 0,
+        tileSize: [256,256],
+        tilePadding: 0,
+        tileClamp: 0.5,
+        pageCount: [16,16],
+        tileDeterminationRatio: 0.25,
+        getTilePath: function(tile) {
+          let url = 'https://wxs.ign.fr/3ht7xcw6f7nciopo16etuqp2/geoportail/wmts?LAYER=ORTHOIMAGERY.ORTHOPHOTOS&FORMAT=image/jpeg&SERVICE=WMTS&VERSION=1.0.0&REQUEST=GetTile&STYLE=normal&TILEMATRIXSET=PM&TILEMATRIX={Z}&TILEROW={Y}&TILECOL={X}';
+          url = url.replace('{X}', tile.x);
+          url = url.replace('{Y}', tile.y);
+          url = url.replace('{Z}', tile.z);
+          return { url };
+        }
+      };
+
+      var geometry = new PlaneGeometry(2, 2, 1);
+
+      var width = window.innerWidth;
+      var height = window.innerHeight;
+
+      const renderer = new WebGLRenderer();
+      renderer.setSize(width, height);
+      renderer.extensions.get("OES_texture_float_linear");
+      const domContainer = document.getElementById("canvas_container");
+      domContainer.appendChild(renderer.domElement);
+
+      // create a scene
+      const scene = new Scene();
+      const camera = new OrthographicCamera(-1, 1, 1, -1, 0.01, 1000);
+      camera.position.set(0.0, 0.0, 1.0);
+      scene.add(camera);
+
+      const virtualTexture = new VirtualTexture(config);
+      const shader = {
+        uniforms: {
+          "bDebugLevel"     : { value: false },
+          "bDebugCache"     : { value: false },
+          "bDebugLastHits"     : { value: false },
+          "pos"     : { value: [0, 0, 0, 0] },
+          "iTextureMode"     : { value: 0 },
+        },
+        fragmentShader: [
+          "#include <vt/pars_fragment>",
+          "uniform VirtualTexture vt;",
+          "uniform bool bDebugLevel;",
+          "uniform vec4 pos;",
+          "varying vec2 vUv;",
+
+          "void main() ",
+          "{",
+          //  "gl_FragColor = texture(vt.texture, vUv); return;",
+            "float r = pos.w*log(vUv.y);",
+            "float theta = -2.+vUv.x*pos.z;",
+            "vec2 uv = pos.xy + r * vec2(cos(theta), sin(theta));",
+            "uv.x = fract(uv.x);",
+            "if (uv.y <0. || uv.y >1. ) discard;",
+
+/*
+            "float mipLevel  = floor( MipLevel( uv, vt.size ));",
+            "mipLevel = clamp(mipLevel, vt.minMipMapLevel, vt.maxMipMapLevel);",
+            "float size = floor(exp2(vt.maxMipMapLevel-mipLevel));",
+            "vec2 id = floor( uv * size );",
+            "id = clamp(id, 0., 0.);//size-1.);",
+            "gl_FragColor = vec4(1.-mipLevel/vt.maxMipMapLevel, id/size, 1.);",
+            //"gl_FragColor = vec4(mipLevel/vt.maxMipMapLevel,0.,0.,  1.);",
+*/
+            "vec2 gx = dFdx(uv);",
+            "vec2 gy = dFdy(uv);",
+            "vec4 page = vec4(0.);",
+            "gl_FragColor = vt_textureGrad(vt, uv, gx, gy, page);",
+//            "gl_FragColor = vec4(page.z / vt.maxMipMapLevel,page.xy/exp2(page.z), 1.);",
+            "if (bDebugLevel) gl_FragColor.r = page.z / vt.maxMipMapLevel;",
+
+          "}"
+
+        ].join("\n"), // end of fragment shader
+
+        vertexShader: [
+          "varying vec2 vUv;",
+          "void main() {",
+            "vec4 mvPosition = modelViewMatrix * vec4( position, 1.0 );",
+            "vUv = vec2(uv.x, 1. - uv.y);",
+            "gl_Position = projectionMatrix * mvPosition;",
+          "}"
+
+        ].join("\n") // end of vertex shader
+      };
+      const visibilityShader =  {
+        uniforms: {
+          "pos"     : { value: [0, 0, 0, 0] },
+          "vt_id": { value: 255.0 },
+          "vt": { value: {} }
+        },
+        fragmentShader: [
+          "struct VirtualTexture {",
+          " float minMipMapLevel;",
+          " float maxMipMapLevel;",
+          " vec2 size;",
+          "};",
+          "uniform VirtualTexture vt;",
+          "uniform float vt_id;",
+          "uniform vec4 pos;",
+          "varying vec2 vUv;",
+
+          "#include <vt/miplevel>",
+
+          "void main() ",
+          "{",
+            "float r = pos.w*log(vUv.y);",
+            "float theta = -2.+vUv.x*pos.z;",
+            "vec2 uv = pos.xy + r * vec2(cos(theta), sin(theta));",
+            "uv.x = fract(uv.x);",
+            "if (uv.y <0. || uv.y >1. ) discard;",
+
+            "float mipLevel = floor( MipLevel( uv, vt.size ));",
+            "mipLevel = clamp(mipLevel, vt.minMipMapLevel, vt.maxMipMapLevel);",
+            "float size = floor(exp2(vt.maxMipMapLevel-mipLevel));",
+            "vec2 id = floor( uv * size );",
+            "id = clamp(id, 0., size-1.);",
+            "gl_FragColor = vec4(id, mipLevel, vt_id)/255.0;",
+          "}"
+        ].join("\n"),
+        vertexShader: shader.vertexShader
+      };
+
+      const material = virtualTexture.createMaterial(shader, 'vt');
+      const mesh = new Mesh(geometry, material);
+      scene.add(mesh);
+      const meshVT = virtualTexture.addGeometry(geometry, visibilityShader);
+
+
+      function onResize() {
+        const w = window.innerWidth;
+        const h = window.innerHeight;
+        renderer.setSize(w, h);
+        virtualTexture.setSize(w, h);
+      }
+
+      function render() {
+        requestAnimationFrame(render);
+        virtualTexture.update(renderer, camera);
+        renderer.render(scene, camera);
+      }
+
+      const url = new URL(location.href);
+      const params = url.searchParams;
+      const lon = params.get('lon') || 2.3488;
+      const lat = params.get('lat') || 48.8534;
+      function fromWebMercator(lat) { return 0.5 - Math.log(Math.tan(Math.PI*( 0.25 + lat / 360)))/(2*Math.PI); }
+      function toWebMercator(v) { return 360*(Math.atan(Math.exp(2*Math.PI*(0.5-v)))/Math.PI-0.25); }
+      let u = params.get('u') || (0.5 + lon / 360);
+      let v = params.get('v') || fromWebMercator(lat);
+      u -= Math.floor(u);
+      v -= Math.floor(v);
+
+      material.uniforms.pos.value = [u, v, 7, 0.1];
+      meshVT.material.uniforms.pos.value = material.uniforms.pos.value;
+
+      function updateURL() {
+        params.set('lon', (material.uniforms.pos.value[0]-0.5)*350);
+        //params.set('lat', -(material.uniforms.pos.value[1]-0.5)*2*85.06);
+        params.set('lat', toWebMercator(material.uniforms.pos.value[1]));
+        params.set('u', material.uniforms.pos.value[0]);
+        params.set('v', material.uniforms.pos.value[1]);
+        window.history.replaceState('', '', url);
+      }
+
+      function onKeyDown(event) {
+        const step = 0.001;
+        switch(event.key) {
+          case "ArrowLeft": material.uniforms.pos.value[0] -= step; break;
+          case "ArrowRight": material.uniforms.pos.value[0] += step; break;
+          case "ArrowDown": material.uniforms.pos.value[1] += step; break;
+          case "ArrowUp": material.uniforms.pos.value[1] -= step; break;
+          case "-": case "PageDown": material.uniforms.pos.value[3] += step; break;
+          case "+": case "PageUp": material.uniforms.pos.value[3] -= step; break;
+          case "k": this.virtualTexture.resetCache(); break;
+          case "l": material.uniforms.bDebugLevel.value = !material.uniforms.bDebugLevel.value; break;
+          default: return; break;
+        };
+        updateURL();
+        event.preventDefault();
+      }
+
+      function onClick(event) {
+        let x = event.offsetX / renderer.domElement.width;
+        let y = event.offsetY / renderer.domElement.height;
+        const r = material.uniforms.pos.value[3]*Math.log(y);
+        const theta = -2 + x * material.uniforms.pos.value[2];
+        material.uniforms.pos.value[0] += r * Math.cos(theta);
+        material.uniforms.pos.value[1] += r * Math.sin(theta);
+        material.uniforms.pos.value[0] -= Math.floor(material.uniforms.pos.value[0]);
+        material.uniforms.pos.value[1] -= Math.floor(material.uniforms.pos.value[1]);
+        updateURL();
+      }
+
+      const step = 0.005;
+      // virtualTexture.tileDetermination.debug();
+      onResize();
+      updateURL();
+      render();
+      window.addEventListener('resize', onResize, false);
+      window.addEventListener('keydown', onKeyDown, true);
+      renderer.domElement.addEventListener('click', onClick, false);
+      window.vt = virtualTexture;
+    </script>
+  </body>
+</html>

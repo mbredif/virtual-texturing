@@ -4,17 +4,34 @@ const uniforms = {
   "vt" : { value: {} },
 };
 
-const pars_fragment = [
+const vt_type = [
   "precision highp usampler2D;",
-
   "struct VirtualTexture {",
   " sampler2D texture;",
   " usampler2D cacheIndirection;",
   " vec2 padding;",
   " vec2 tileSize;",
   " vec2 numPages;",
+  " float minMipMapLevel;",
   " float maxMipMapLevel;",
-  "};",
+  " vec2 size;",
+  "};"
+].join("\n");
+
+const vt_miplevel = [
+  "float MipLevel(vec2 uv, vec2 size)",
+  "{",
+    "vec2 coordPixels = uv * size;",
+    "vec2 dx = dFdx(coordPixels);",
+    "vec2 dy = dFdy(coordPixels);",
+    "float d = min(dot( dx, dx ), dot( dy, dy ) );",
+    "return 0.5 * log2( d );",
+  "}"
+].join("\n");
+
+const pars_fragment = [
+  "#include <vt/type>",
+  "#include <vt/miplevel>",
 
   "vec4 vt_textureCoords(in VirtualTexture vt, inout vec2 uv) {",
     // indirection table lookup
@@ -135,6 +152,8 @@ const pars_fragment = [
 
 UniformsLib[ "vt" ] = uniforms;
 ShaderChunk[ "vt/pars_fragment" ] = pars_fragment;
+ShaderChunk[ "vt/type" ] = vt_type;
+ShaderChunk[ "vt/miplevel" ] = vt_miplevel;
 
 export const VirtualTextureShader = {
   uniforms: uniforms,

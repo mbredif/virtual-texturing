@@ -43,4 +43,11 @@ export class UsageTable {
     }
   }
 
+  print() {
+    for (const [key, value] of Object.entries(this.table)) {
+      console.log(TileId.getX(key),TileId.getY(key),TileId.getZ(key), value);
+    }
+      console.log('---');
+  }
+
 };

@@ -169,19 +169,19 @@ export class VirtualTexture {
 
     }
 
-    addGeometry ( geometry ) {
+    addGeometry ( geometry, shader ) {
 
-      const uniforms = UniformsUtils.clone( VisibleTileShader.uniforms );
+      shader = shader || VisibleTileShader;
+      const uniforms = UniformsUtils.clone( shader.uniforms );
 
-      uniforms.vt_size.value = [ this.size[0] * this.tileDetermination.ratio, this.size[1] * this.tileDetermination.ratio];
-      uniforms.vt_minMipMapLevel.value = this.minMipMapLevel;
-      uniforms.vt_maxMipMapLevel.value = this.maxMipMapLevel;
-      uniforms.vt_tileCount.value = this.tileCount;
+      uniforms.vt.value.size = [ this.size[0] * this.tileDetermination.ratio, this.size[1] * this.tileDetermination.ratio];
+      uniforms.vt.value.minMipMapLevel = this.minMipMapLevel;
+      uniforms.vt.value.maxMipMapLevel = this.maxMipMapLevel;
 
       const parameters = {
         uniforms: uniforms,
-        fragmentShader: VisibleTileShader.fragmentShader,
-        vertexShader: VisibleTileShader.vertexShader,
+        fragmentShader: shader.fragmentShader,
+        vertexShader: shader.vertexShader,
         side: DoubleSide
       };
 
@@ -189,6 +189,7 @@ export class VirtualTexture {
       const meshVT = new Mesh(geometry, materialVT);
 
       this.tileDetermination.scene.add(meshVT);
+      return meshVT;
     };
 
     createMaterial ( parameters, textureName ) {
@@ -211,7 +212,9 @@ export class VirtualTexture {
       vt.padding = [ this.cache.padding/this.cache.realTileSize.x , this.cache.padding/this.cache.realTileSize.y ];
       vt.tileSize = [ this.cache.realTileSize.x , this.cache.realTileSize.y ];
       vt.numPages = [ this.cache.pageCount.x , this.cache.pageCount.y ];
+      vt.minMipMapLevel = this.minMipMapLevel;
       vt.maxMipMapLevel = this.maxMipMapLevel;
+      vt.size =  [ this.size[0], this.size[1]];
       uniforms.bDebugCache.value = this.debugCache;
       uniforms.bDebugLevel.value = this.debugLevel;
       uniforms.bDebugLastHits.value = this.debugLastHits;
