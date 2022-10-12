@@ -51,7 +51,7 @@
           pageCount: [16,16],
           tileDeterminationRatio: 0.25,
           getTilePath: function(tile) {
-            let url = 'https://wxs.ign.fr/3ht7xcw6f7nciopo16etuqp2/geoportail/wmts?LAYER=ORTHOIMAGERY.ORTHOPHOTOS&FORMAT=image/jpeg&SERVICE=WMTS&VERSION=1.0.0&REQUEST=GetTile&STYLE=normal&TILEMATRIXSET=PM&TILEMATRIX={Z}&TILEROW={Y}&TILECOL={X}';
+            let url = 'https://wxs.ign.fr/decouverte/geoportail/wmts?LAYER=ORTHOIMAGERY.ORTHOPHOTOS&FORMAT=image/jpeg&SERVICE=WMTS&VERSION=1.0.0&REQUEST=GetTile&STYLE=normal&TILEMATRIXSET=PM&TILEMATRIX={Z}&TILEROW={Y}&TILECOL={X}';
             url = url.replace('{X}', tile.x);
             url = url.replace('{Y}', tile.y);
             url = url.replace('{Z}', tile.z);
