@@ -4,16 +4,19 @@
 
 export const TileId = {
 
+  // <-----14 -----><- ----14-- ---><-4>
+  // xxxxxxxx xxxxxxyy yyyyyyyy yyyyzzzz :  14+14+4 -> 0<=z<=14
+
   create : function(x, y, z) {
-   return ((x & 0xFFF) << 16) | ((y & 0xFFF) << 4) | (z & 0xF);
+    return ((x & 0x2FFF) << 18) | ((y & 0x2FFF) << 4) | (z & 0xF);
   },
 
   getX : function(id) {
-    return (id >> 16) & 0xFFF;
+    return (id >> 18) & 0x2FFF;
   },
 
   getY : function(id) {
-    return (id >> 4) & 0xFFF;
+    return (id >> 4) & 0x2FFF;
   },
 
   getZ : function(id) {
@@ -21,10 +24,10 @@ export const TileId = {
   },
 
   isValid: function (id) {
-    return id >= 0;
+    return id == 0xF;
   },
 
   createInvalid: function () {
-    return -1;
+    return 0xF;
   }
 };
