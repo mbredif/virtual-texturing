@@ -25,28 +25,31 @@ export class APP {
     console.log("c: toggle debug cache")
     console.log("a: toggle indirection table debuger visibility")
     console.log("z: toggle tile determination debuger visibility")
+    console.log("d: toggle debug tiles (resets cache)")
     console.log("k: reset cache")
     console.log("t: change virtual texture filtering mode")
     console.log("i: show cache status")
   }
 
   onKeyDown(event) {
+    const vt = this.virtualTexture;
     switch(event.key) {
-      case "h": this.virtualTexture.debugLastHits = !this.virtualTexture.debugLastHits; break;
-      case "l": this.virtualTexture.debugLevel = !this.virtualTexture.debugLevel; break;
-      case "c": this.virtualTexture.debugCache = !this.virtualTexture.debugCache; break;
+      case "h": vt.debugLastHits = !vt.debugLastHits; break;
+      case "l": vt.debugLevel = !vt.debugLevel; break;
+      case "c": vt.debugCache = !vt.debugCache; break;
       case "z": this.tileDeterminationDebug.hidden = !this.tileDeterminationDebug.hidden; break;
       case "a": this.indirectionTableDebug.hidden = !this.indirectionTableDebug.hidden; break;
-      case "k": this.virtualTexture.resetCache(); break;
+      case "d": vt.cache.debug = !vt.cache.debug; vt.resetCache(); break;
+      case "k": vt.resetCache(); break;
       case "t":
         const textureModes = ["textureGrad", "textureLod", "textureBasic", "textureGradBasic"];//, "textureGrad0", "textureLod0"];
-        this.virtualTexture.textureMode = (this.virtualTexture.textureMode +1) % textureModes.length;
-        console.log(textureModes[this.virtualTexture.textureMode]);
+        vt.textureMode = (vt.textureMode +1) % textureModes.length;
+        console.log(textureModes[vt.textureMode]);
         break;
-      case "i": console.log(this.virtualTexture.cache.getStatus()); break;
+      case "i": console.log(vt.cache.getStatus()); break;
       default: return; break;
     }
-    this.virtualTexture.updateUniforms(this.material);
+    vt.updateUniforms(this.material);
     event.preventDefault();
   }
 

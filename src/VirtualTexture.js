@@ -89,6 +89,7 @@ export class VirtualTexture {
     }
 
     resetCache () {
+
       this.cache.clear();
       this.indirectionTable.clear();
 
@@ -101,10 +102,11 @@ export class VirtualTexture {
           this.tileQueue.push(tile);
         }
       }
+
     }
 
     restoreOrEnqueueVisibleUncachedTiles() {
-      for (let tileId in this.usageTable.table) {
+      for (const tileId in this.usageTable.table) {
         if (this.usageTable.table.hasOwnProperty(tileId)) {
           let pageX = TileId.getX(tileId);
           let pageY = TileId.getY(tileId);
@@ -131,7 +133,7 @@ export class VirtualTexture {
 
           if ((StatusAvailable !== status) && !wasRestored) {
 
-            const minParentZ = this.useProgressiveLoading ? 0 : (pageZ - 1);
+            const minParentZ = this.useProgressiveLoading ? this.minMipMapLevel : (pageZ - 1);
 
             // request the page and all parents
             while (pageZ > minParentZ) {
@@ -159,7 +161,7 @@ export class VirtualTexture {
     }
 
     update (renderer, scene, camera) {
-      //if(!this.needsUpdate) return;
+
       this.updateVisibleTileMaterial();
       this.tileDetermination.update( renderer, scene, camera );
       this.usageTable.update( this.tileDetermination.data );
@@ -170,11 +172,13 @@ export class VirtualTexture {
     }
 
     updateVisibleTileMaterial ( ) {
+
       const uniforms = this.tileDetermination.visibleTileMaterial.uniforms;
       uniforms.vt_size.value = [ this.size[0] * this.tileDetermination.ratio, this.size[1] * this.tileDetermination.ratio];
       uniforms.vt_minMipMapLevel.value = this.minMipMapLevel;
       uniforms.vt_maxMipMapLevel.value = this.maxMipMapLevel;
       uniforms.vt_tileCount.value = this.tileCount;
+
     };
 
     createMaterial ( parameters, textureName ) {

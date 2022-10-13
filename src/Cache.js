@@ -72,6 +72,7 @@ export class Cache {
       this.pages.push(new Page());
     }
 
+    this.debug = false;
     this.initTexture();
     this.clear();
   }
@@ -270,8 +271,8 @@ export class Cache {
       let y = this.realTileSize.y * this.getPageY(pageId)+tile.y0;
       let level = 0;
       function buildMipMaps(bitmap) {
-        //tile.image = createAnnotatedImageData(bitmap, tile.x, tile.y, tile.z, level, scope.maxLevel, tile.x0, tile.y0, scope.padding, scope.realTileSize);
         tile.image = bitmap;
+        if (scope.debug) tile.image = createAnnotatedImageData(bitmap, tile.x, tile.y, tile.z, level, scope.maxLevel, tile.x0, tile.y0, scope.padding, scope.realTileSize);
         pos.set(x, y);
         renderer.copyTextureToTexture(pos, tile, scope.texture, level);
         x >>= 1;
