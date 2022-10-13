@@ -45,7 +45,7 @@ export class TileQueue {
         tile.x0 = filePath.x0 || 0;
         tile.y0 = filePath.y0 || 0;
 
-        console.log('Tile ' + tile.x + ',' + tile.y + '@' + tile.z + ' loaded | Count: ' + scope.loadCount, tile );
+        // console.log('Tile ' + tile.x + ',' + tile.y + '@' + tile.z + ' loaded | Count: ' + scope.loadCount, tile );
 
         scope.process();
         if (scope.callback) scope.callback(tile);

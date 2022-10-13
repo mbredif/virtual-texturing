@@ -4,6 +4,7 @@
 
 import { RenderWithVtShader } from './RenderWithVtShader.js';
 import { VirtualTexture } from '../../src/VirtualTexture.js';
+import { TileDeterminationDebug } from '../../src/TileDeterminationDebug.js';
 import { Clock, WebGLRenderer, Scene, PerspectiveCamera, Mesh } from '../jsm/three.module.js';
 import { MapControls } from '../jsm/OrbitControls.js';
 import { WEBGL } from '../jsm/WebGL.js';
@@ -18,7 +19,12 @@ export class APP {
     this.clock = new Clock();
 
     this.virtualTexture = null;
-
+    console.log("h: toggle debug last hits")
+    console.log("l: toggle debug level")
+    console.log("c: toggle debug cache")
+    console.log("k: reset cache")
+    console.log("t: change virtual texture filtering mode")
+    console.log("i: show cache status")
   }
 
   onKeyDown(event) {
@@ -51,7 +57,8 @@ export class APP {
   render() {
     ++this.renderer.renderCount;
     if (this.virtualTexture) {
-      this.virtualTexture.update(this.renderer, this.camera);
+      this.virtualTexture.update(this.renderer, this.scene, this.camera);
+      this.tileDeterminationDebug.update();
     }
     this.renderer.render(this.scene, this.camera);
   }
@@ -105,10 +112,9 @@ export class APP {
     this.material = this.virtualTexture.createMaterial(RenderWithVtShader, 'vt');
     const mesh = new Mesh(geometry, this.material);
     this.scene.add(mesh);
-    this.virtualTexture.addGeometry(geometry);
 
     // init debug helpers
-    //this.virtualTexture.tileDetermination.debug();
-    //this.virtualTexture.indirectionTable.debug();
+    this.tileDeterminationDebug = new TileDeterminationDebug(this.virtualTexture.tileDetermination);
+    this.virtualTexture.indirectionTable.debug();
   }
 };

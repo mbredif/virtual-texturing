@@ -9,9 +9,8 @@
  import { UsageTable } from './UsageTable.js';
  import { TileId } from './TileId.js';
  import { Tile } from './Tile.js';
- import { VisibleTileShader } from './VisibleTileShader.js';
  import { VirtualTextureShader } from './VirtualTextureShader.js';
- import { UniformsUtils, DoubleSide, ShaderMaterial, Mesh } from '../examples/jsm/three.module.js';
+ import { UniformsUtils, ShaderMaterial } from '../examples/jsm/three.module.js';
 
 export class VirtualTexture {
   constructor( params ) {
@@ -159,9 +158,10 @@ export class VirtualTexture {
       }
     }
 
-    update (renderer, camera) {
+    update (renderer, scene, camera) {
       //if(!this.needsUpdate) return;
-      this.tileDetermination.update( renderer, camera );
+      this.updateVisibleTileMaterial();
+      this.tileDetermination.update( renderer, scene, camera );
       this.usageTable.update( this.tileDetermination.data );
       this.restoreOrEnqueueVisibleUncachedTiles();
       this.cache.update( renderer, this.usageTable );
@@ -169,26 +169,12 @@ export class VirtualTexture {
 
     }
 
-    addGeometry ( geometry ) {
-
-      const uniforms = UniformsUtils.clone( VisibleTileShader.uniforms );
-
+    updateVisibleTileMaterial ( ) {
+      const uniforms = this.tileDetermination.visibleTileMaterial.uniforms;
       uniforms.vt_size.value = [ this.size[0] * this.tileDetermination.ratio, this.size[1] * this.tileDetermination.ratio];
       uniforms.vt_minMipMapLevel.value = this.minMipMapLevel;
       uniforms.vt_maxMipMapLevel.value = this.maxMipMapLevel;
       uniforms.vt_tileCount.value = this.tileCount;
-
-      const parameters = {
-        uniforms: uniforms,
-        fragmentShader: VisibleTileShader.fragmentShader,
-        vertexShader: VisibleTileShader.vertexShader,
-        side: DoubleSide
-      };
-
-      const materialVT = new ShaderMaterial(parameters);
-      const meshVT = new Mesh(geometry, materialVT);
-
-      this.tileDetermination.scene.add(meshVT);
     };
 
     createMaterial ( parameters, textureName ) {

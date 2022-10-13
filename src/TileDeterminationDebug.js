@@ -1,12 +1,4 @@
-//
-//
-//
-import { Scene, NearestFilter, RGBAFormat, WebGLRenderTarget } from '../examples/jsm/three.module.js';
-import { VisibleTileShader } from './VisibleTileShader.js';
-import { UniformsUtils, DoubleSide, ShaderMaterial } from '../examples/jsm/three.module.js';
-
-
-class TileDeterminationDebug {
+export class TileDeterminationDebug {
   constructor(tileDetermination) {
     this.tileDetermination = tileDetermination;
     this.canvas = null;
@@ -81,72 +73,4 @@ class TileDeterminationDebug {
     }
     this.canvas.getContext('2d').putImageData(this.imgData, 0, 0);
   }
-}
-
-export class TileDetermination {
-  constructor(ratio) {
-    this.renderTarget = null;
-    this.data = null;
-    this.ratio = ratio;
-
-    const uniforms = UniformsUtils.clone( VisibleTileShader.uniforms );
-    const parameters = {
-      uniforms: uniforms,
-      fragmentShader: VisibleTileShader.fragmentShader,
-      vertexShader: VisibleTileShader.vertexShader,
-      side: DoubleSide
-    };
-    this.visibleTileMaterial = new ShaderMaterial(parameters);
-
-    this.debug = new TileDeterminationDebug(this);
-  }
-
-  setSize (width, height) {
-
-    width = Math.floor(width * this.ratio);
-    height = Math.floor(height * this.ratio);
-    if (!this.renderTarget) {
-      var renderTargetParameters = {
-        minFilter: NearestFilter,
-        magFilter: NearestFilter,
-        format: RGBAFormat,
-        stencilBufer: false
-      };
-
-      this.renderTarget = new WebGLRenderTarget( width, height, renderTargetParameters );
-
-    } else if ( width != this.renderTarget.width ||  height != this.renderTarget.height ) {
-
-      this.renderTarget.setSize(width, height);
-
-    } else {
-
-      return;
-
-    }
-
-    this.data = new Uint8Array(width * height * 4);
-    if (this.canvas) {
-      this.canvas.width = width;
-      this.canvas.height = height;
-      this.imgData = this.canvas.getContext('2d').createImageData(width, height);
-    }
-
-  }
-
-  // parse render taget pixels (mip map levels and visible tile)
-  update ( renderer, scene, camera ) {
-
-    const overrideMaterial = scene.overrideMaterial; // save
-    scene.overrideMaterial = this.visibleTileMaterial;
-    renderer.setRenderTarget( this.renderTarget );
-    renderer.render( scene, camera );
-    renderer.setRenderTarget( null );
-    renderer.readRenderTargetPixels( this.renderTarget, 0, 0,
-      this.renderTarget.width, this.renderTarget.height, this.data );
-    scene.overrideMaterial = overrideMaterial; // restore
-
-    this.debug.update();
-  }
-
 };
