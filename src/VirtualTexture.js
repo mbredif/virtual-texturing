@@ -27,7 +27,7 @@ export class VirtualTexture {
     this.useProgressiveLoading = true;
 
     // init tile queue
-    this.tileQueue = new TileQueue(2);
+    this.tileQueue = new TileQueue(10);
     this.tileQueue.getTilePath = params.getTilePath;
 
     this.tileCount = 1 << this.maxMipMapLevel;

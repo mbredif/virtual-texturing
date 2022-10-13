@@ -27,10 +27,6 @@ export class IndirectionTable {
     this.texture = null;
     this.dataArrays = null;
 
-    // debug
-    this.canvas = null;
-    this.imageData = null;
-
     this.init();
   }
 
@@ -88,72 +84,6 @@ export class IndirectionTable {
     this.texture.needsUpdate = true;
   }
 
-  debug (params) {
-
-    if( this.canvas ) return;
-
-    this.canvas = [];
-    this.imageData = [];
-
-    var verticalPosition = (params && params.verticalPosition) ? params.verticalPosition : 0;
-    var horizontalPosition = (params && params.horizontalPosition) ? params.horizontalPosition : 10;
-    var position = (params && params.position) ? params.position : "absolute";
-    var zIndex = (params && params.zIndex) ? params.zIndex : "100";
-    var borderColor = (params && params.borderColor) ? params.borderColor : "blue";
-    var borderStyle = (params && params.borderStyle) ? params.borderStyle : "solid";
-    var borderWidth = (params && params.borderWidth) ? params.borderWidth : 1;
-    var lineHeight = (params && params.lineHeight) ? params.lineHeight : 10; // in pixels
-    var fontSize = (params && params.fontSize) ? params.fontSize : 13; // in pixels
-    var fontFamily = (params && params.fontFamily) ? params.fontFamily : "Arial";
-
-    // create div title
-    var divTitle = document.createElement('div');
-
-    divTitle.style.color = "#000000";
-    divTitle.style.fontFamily = fontFamily;
-    divTitle.style.fontSize = fontSize + "px";
-    divTitle.style.fontWeight = "bold";
-    divTitle.style.zIndex = 100;
-    divTitle.style.position = "absolute";
-    divTitle.style.top = verticalPosition + "px";
-    divTitle.style.left = horizontalPosition + "px";
-
-    divTitle.innerHTML = "Indirection Table";
-    document.body.appendChild(divTitle);
-    verticalPosition += lineHeight;
-
-    for( let l = this.minLevel; l <= this.maxLevel; ++l) {
-      const canvas = document.createElement('canvas');
-      this.canvas.push(canvas);
-      canvas.width = 1 << l;
-      canvas.height = 1 << l;
-      this.imageData[l] = canvas.getContext('2d').createImageData(canvas.width, canvas.height);
-
-      canvas.style.top = verticalPosition + lineHeight + "px";
-      canvas.style.left = horizontalPosition + "px";
-      canvas.style.position = position;
-      canvas.style.zIndex = zIndex;
-      canvas.style.borderColor = borderColor;
-      canvas.style.borderStyle = borderStyle;
-      canvas.style.borderWidth = borderWidth + "px";
-
-      verticalPosition += canvas.height + 3*borderWidth;
-
-      document.body.appendChild(canvas);
-    }
-  }
-
-  writeToCanvas(l, cache) {
-    const data = this.dataArrays[l];
-    for (let j = 0; j < data.length; j += 4) {
-      this.imageData[l].data[j + 0] = data[j + 2] * 255 / this.maxLevel;
-      this.imageData[l].data[j + 1] = data[j    ] * 255 / cache.pageCount.x;
-      this.imageData[l].data[j + 2] = data[j + 1] * 255 / cache.pageCount.y;
-      this.imageData[l].data[j + 3] = 255;//data[j + 3];
-    }
-    this.canvas[l].getContext('2d').putImageData(this.imageData[l], 0, 0);
-  }
-
   writeToTexture() {
     this.texture.needsUpdate = true;
   }
@@ -185,7 +115,6 @@ export class IndirectionTable {
   update (cache, renderCount) {
     for( let l = this.minLevel; l <= this.maxLevel; ++l) {
       this.setData(l, cache, renderCount);
-      if (this.canvas) this.writeToCanvas(l, cache);
     }
     this.writeToTexture();
   }
