@@ -1,7 +1,6 @@
 export const RenderWithVtShader = {
   uniforms: {
     "bDebugLevel"     : { value: false },
-    "bDebugCache"     : { value: false },
     "bDebugLastHits"     : { value: false },
     "iTextureMode"     : { value: 0 },
   },
@@ -9,7 +8,6 @@ export const RenderWithVtShader = {
     "#include <vt/pars_fragment>",
     "varying vec2 vUv;",
     "uniform bool bDebugLevel;",
-    "uniform bool bDebugCache;",
     "uniform bool bDebugLastHits;",
     "uniform int iTextureMode;",
     "uniform VirtualTexture vt;",
@@ -33,12 +31,6 @@ export const RenderWithVtShader = {
       "  case 1 : gl_FragColor = vt_textureLod(vt, uv, vt_lod(gx, gy, vt_size), page); break;",
       "  case 2 : gl_FragColor = vt_textureBasic(vt, uv, page); break;",
       "  case 3 : gl_FragColor = vt_textureGradBasic(vt, uv, page); break;",
-      "}",
-      "if (bDebugCache)  switch (iTextureMode) {",
-      "  case 0 : gl_FragColor = textureGrad(vt.texture, uv, gx, gy); break;",
-      "  case 1 : gl_FragColor = textureLod(vt.texture, uv, vt_lod(gx, gy, vt.numPages * vt.tileSize)); break;",
-      "  case 2 : gl_FragColor = texture(vt.texture, uv); break;",
-      "  case 3 : gl_FragColor = textureGrad(vt.texture, uv, gx, gy); break;",
       "}",
       "if (bDebugLevel) gl_FragColor.r = page.z / vt.maxMipMapLevel;",
       "if (bDebugLastHits) gl_FragColor.g = 1. - (page.w / 255.);",

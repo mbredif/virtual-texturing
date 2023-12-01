@@ -189,6 +189,7 @@ export class Cache {
     this.freePages = [];
 
     for (let i = 0; i < this.pages.length; ++i) {
+      this.pages[i].image = undefined;
       this.pages[i].valid = false;
       this.freePages[i] = true;
     }
@@ -280,6 +281,8 @@ export class Cache {
         ++level;
         if (level <= scope.maxTileLevels)
           resizeHalf(bitmap).then(buildMipMaps);
+        else
+          scope.pages[pageId].image = bitmap;
       }
       createImageBitmap(tile.image).then(buildMipMaps);
       delete this.newTiles[pageId];

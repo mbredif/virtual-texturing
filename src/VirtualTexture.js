@@ -69,7 +69,6 @@ export class VirtualTexture {
     };
 
     this.needsUpdate = false;
-    this.debugCache = false;
     this.debugLevel = false;
     this.debugLastHits = false;
     this.textureMode = 0;
@@ -203,7 +202,6 @@ export class VirtualTexture {
       vt.numPages = [ this.cache.pageCount.x , this.cache.pageCount.y ];
       vt.maxMipMapLevel = this.maxMipMapLevel;
       vt.maxAniso = vt.texture.anisotropy;
-      uniforms.bDebugCache.value = this.debugCache;
       uniforms.bDebugLevel.value = this.debugLevel;
       uniforms.bDebugLastHits.value = this.debugLastHits;
       uniforms.iTextureMode.value = this.textureMode;

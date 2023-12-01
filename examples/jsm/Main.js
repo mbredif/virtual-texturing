@@ -6,6 +6,7 @@ import { RenderWithVtShader } from './RenderWithVtShader.js';
 import { VirtualTexture } from '../../src/VirtualTexture.js';
 import { TileDeterminationDebug } from '../../src/TileDeterminationDebug.js';
 import { IndirectionTableDebug } from '../../src/IndirectionTableDebug.js';
+import { CacheDebug } from '../../src/CacheDebug.js';
 import { Clock, WebGLRenderer, Scene, PerspectiveCamera, Mesh } from '../jsm/three.module.js';
 import { MapControls } from '../jsm/OrbitControls.js';
 import { WEBGL } from '../jsm/WebGL.js';
@@ -22,7 +23,7 @@ export class APP {
     this.virtualTexture = null;
     console.log("h: toggle debug last hits")
     console.log("l: toggle debug level")
-    console.log("c: toggle debug cache")
+    console.log("e: toggle cache debuger visibility")
     console.log("a: toggle indirection table debuger visibility")
     console.log("z: toggle tile determination debuger visibility")
     console.log("d: toggle debug tiles (resets cache)")
@@ -36,9 +37,9 @@ export class APP {
     switch(event.key) {
       case "h": vt.debugLastHits = !vt.debugLastHits; break;
       case "l": vt.debugLevel = !vt.debugLevel; break;
-      case "c": vt.debugCache = !vt.debugCache; break;
-      case "z": this.tileDeterminationDebug.hidden = !this.tileDeterminationDebug.hidden; break;
+      case "e": this.cacheDebug.hidden = !this.cacheDebug.hidden; break;
       case "a": this.indirectionTableDebug.hidden = !this.indirectionTableDebug.hidden; break;
+      case "z": this.tileDeterminationDebug.hidden = !this.tileDeterminationDebug.hidden; break;
       case "d": vt.cache.debug = !vt.cache.debug; vt.resetCache(); break;
       case "k": vt.resetCache(); break;
       case "t":
@@ -68,6 +69,7 @@ export class APP {
       this.virtualTexture.update(this.renderer, this.scene, this.camera);
       this.tileDeterminationDebug.update();
       this.indirectionTableDebug.update();
+      this.cacheDebug.update();
     }
     this.renderer.render(this.scene, this.camera);
   }
@@ -125,5 +127,6 @@ export class APP {
     // init debug helpers
     this.tileDeterminationDebug = new TileDeterminationDebug(this.virtualTexture, {hidden: true});
     this.indirectionTableDebug = new IndirectionTableDebug(this.virtualTexture, {hidden: true});
+    this.cacheDebug = new CacheDebug(this.virtualTexture, {hidden: true});
   }
 };

@@ -2,7 +2,7 @@
 //
 //
 
-export class TileDeterminationDebug {
+export class CacheDebug {
   constructor(virtualTexture, params) {
     this.virtualTexture = virtualTexture;
     this.hidden = params.hidden || false;
@@ -31,11 +31,11 @@ export class TileDeterminationDebug {
     this.divTitle.style.top = verticalPosition + "px";
     this.divTitle.style.left = horizontalPosition + "px";
 
-    this.divTitle.innerHTML = "Visible Tiles (Feedback Buffer)";
+    this.divTitle.innerHTML = "Cached Tiles (Texture Pages)";
     document.body.appendChild(this.divTitle);
 
-    const width = 1;
-    const height = 1;
+    const width = 512;
+    const height = 512;
 
     this.canvas = document.createElement('canvas');
     this.canvas.width =  width;
@@ -55,39 +55,25 @@ export class TileDeterminationDebug {
   update() {
     this.canvas.hidden = this.hidden;
     this.divTitle.hidden = this.hidden;
-    const tileDetermination = this.virtualTexture.tileDetermination;
-    if (!tileDetermination.renderTarget) return;
-    const width = tileDetermination.renderTarget.width;
-    const height = tileDetermination.renderTarget.height;
-    const data = tileDetermination.data;
-    const maxMipMapLevel = this.virtualTexture.maxMipMapLevel;
+    const cache = this.virtualTexture.cache;
+    const sx = this.canvas.width/cache.pageCount.x;
+    const sy = this.canvas.height/cache.pageCount.y;
+    const ctx = this.canvas.getContext('2d');
 
-    if(this.canvas.width != width || this.canvas.height != height) {
-      this.canvas.width =  width;
-      this.canvas.height = height;
-      this.imgData = this.canvas.getContext('2d').createImageData(width, height);
+    ctx.reset();
+    for(const pageId in cache.pages) {
+    	const page = cache.pages[pageId];
+    	const x = cache.getPageX(pageId);
+    	const y = cache.getPageY(pageId);
+    	const z = cache.getPageZ(pageId);
+    	ctx.save();
+        ctx.textAlign = "center";
+    	ctx.translate(x*sx, y*sy);
+    	if(page.image) ctx.drawImage(page.image, 0, 0, sx, sy);
+    	ctx.fillText(page.hits, sx>>1, sy*0.25);
+    	ctx.fillText(page.lastHits, sx>>1, sy*0.75);
+    	ctx.restore();
     }
-
-    // copy the flipped texture to data
-    for(let x=0; x<width; ++x) {
-      for(let y=0; y<height; ++y) {
-        const i = 4 * (y*width + x);
-        const j = 4 * ((height-1-y)*width + x);
-        const z = maxMipMapLevel - data[j+2];
-        const size = 1 << z;
-        if (data[j+2] == 0) { // clear alpĥa is zero => no virtual texel here
-          this.imgData.data[i+0] = 0;
-          this.imgData.data[i+1] = 0;
-          this.imgData.data[i+2] = 0;
-        } else {
-          this.imgData.data[i+0] = 255* z / maxMipMapLevel;
-          this.imgData.data[i+1] = 255*(0.5+data[j+0])/size;
-          this.imgData.data[i+2] = 255*(0.5+data[j+1])/size;
-        }
-        this.imgData.data[i+3] = 255;
-
-      }
-    }
-    this.canvas.getContext('2d').putImageData(this.imgData, 0, 0);
+    this.divTitle.innerHTML = "Cached Tiles (Texture Pages)" + JSON.stringify(cache.getStatus());
   }
 };
