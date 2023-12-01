@@ -127,13 +127,13 @@ const pars_fragment = [
   // vt_texture* aliases for built-in texture* functions
   "vec4 vt_texture(in sampler2D tex, in vec2 uv) { return texture(tex, uv); }",
   "uvec4 vt_texture(in usampler2D tex, in vec2 uv) { return texture(tex, uv); }",
-  "ivec4 vt_texture(in isampler2D tex, in vec2 uv) { return texture(tex, uv); }",
+  "ivec4 vt_texture(in highp isampler2D tex, in vec2 uv) { return texture(tex, uv); }",
   "vec4 vt_textureGrad(in sampler2D tex, in vec2 uv, in vec2 gx, in vec2 gy) { return textureGrad(tex, uv, gx, gy); }",
   "uvec4 vt_textureGrad(in usampler2D tex, in vec2 uv, in vec2 gx, in vec2 gy) { return textureGrad(tex, uv, gx, gy); }",
-  "ivec4 vt_textureGrad(in isampler2D tex, in vec2 uv, in vec2 gx, in vec2 gy) { return textureGrad(tex, uv, gx, gy); }",
+  "ivec4 vt_textureGrad(in highp isampler2D tex, in vec2 uv, in vec2 gx, in vec2 gy) { return textureGrad(tex, uv, gx, gy); }",
   "vec4 vt_textureLod(in sampler2D tex, in vec2 uv, in float lod) { return textureLod(tex, uv, lod); }",
   "uvec4 vt_textureLod(in usampler2D tex, in vec2 uv, in float lod) { return textureLod(tex, uv, lod); }",
-  "ivec4 vt_textureLod(in isampler2D tex, in vec2 uv, in float lod) { return textureLod(tex, uv, lod); }"
+  "ivec4 vt_textureLod(in highp isampler2D tex, in vec2 uv, in float lod) { return textureLod(tex, uv, lod); }"
 
 ].join("\n");
 
