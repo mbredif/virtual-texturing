@@ -60,12 +60,11 @@ export class VirtualTexture {
     this.usageTable = new UsageTable(this.maxMipMapLevel);
 
     this.tileQueue.callback = function (tile) {
-      var status = scope.cache.getPageStatus(tile.id); // was parentId... not sure why
-      if (status !== StatusAvailable) {
-        var pageId = scope.cache.cacheTile(tile);
-        scope.indirectionTable.add(tile.id, pageId);
-      }
-      scope.needsUpdate = true;
+      scope.cache.cacheTile(tile);
+    };
+
+    this.cache.callback = function (pageId, tile) {
+      scope.indirectionTable.add(tile.id, pageId);
     };
 
     this.needsUpdate = false;

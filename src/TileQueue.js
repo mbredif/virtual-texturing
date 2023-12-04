@@ -32,7 +32,6 @@ export class TileQueue {
       this.onLoading++;
 
       image.onload = function() {
-
         --scope.onLoading;
         ++scope.loadCount;
 

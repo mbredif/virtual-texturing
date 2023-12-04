@@ -1,45 +1,37 @@
 import { Page } from './Page.js';
 import { TileId } from './TileId.js';
 import { Tile } from './Tile.js';
-import { DataTexture, RGBAFormat, UnsignedByteType, UVMapping, ClampToEdgeWrapping, LinearMipMapLinearFilter, LinearFilter, Vector2 }
+import { DataTexture, CanvasTexture, RGBAFormat, UnsignedByteType, UVMapping, ClampToEdgeWrapping, LinearMipMapLinearFilter, LinearFilter, Vector2 }
 from '../examples/jsm/three.module.js';
 
 export const StatusNotAvailable = 0;
 export const StatusAvailable = 1;
 export const StatusPendingDelete = 2;
 
-function createAnnotatedImageData(imageBitmap, x, y, z, l, lmax, x0, y0, pad, realTileSize) {
-	const canvas = document.createElement( "canvas" );
-	const context = canvas.getContext( "2d" );
-  canvas.width = imageBitmap.width;
-  canvas.height = imageBitmap.height;
-  context.drawImage(imageBitmap, 0, 0, canvas.width, canvas.height);
-  context.translate((pad-x0) >> l, (pad-y0) >> l);
-  const t = Math.floor((z-l)*255/lmax);
-  const color = "rgb("+t+',0,'+(255-t)+')';
-  context.strokeStyle = color;
-  context.fillStyle  = color;
-  const w = (realTileSize.x-2*pad) >> l;
-  const h = (realTileSize.y-2*pad) >> l;
-  context.strokeRect(0, 0, w, h);
-  context.translate(w >> 1, h >> 1);
-  context.textAlign = "center";
-  context.scale(canvas.width / 64, canvas.height / 64);
-  context.fillText(x+','+y, 0,-5);
-  context.fillText(z+'-'+l, 0, 5);
-  return context.getImageData(0, 0, canvas.width, canvas.height);
-}
-
-function resizeHalf( image ) {
-	const canvas = document.createElement( "canvas" );
-	const context = canvas.getContext( "2d" );
+function createTexture(image, x, y, z, l, lmax, x0, y0, pad, realTileSize, debug) {
+  const canvas = document.createElement( "canvas" );
+  const context = canvas.getContext( "2d" );
   context.imageSmoothingEnabled = true;
-	canvas.width = (image.width >> 1) || 1;
-  canvas.height = (image.height >> 1) || 1;
+  canvas.width = image.width >> l || 1;
+  canvas.height = image.height >> l || 1;
   context.drawImage(image, 0, 0, canvas.width, canvas.height);
-  return createImageBitmap(canvas);
+  if(debug) {
+    context.translate((pad-x0) >> l, (pad-y0) >> l);
+    const t = Math.floor((z-l)*255/lmax);
+    const color = "rgb("+t+',0,'+(255-t)+')';
+    context.strokeStyle = color;
+    context.fillStyle  = color;
+    const w = (realTileSize.x-2*pad) >> l;
+    const h = (realTileSize.y-2*pad) >> l;
+    context.strokeRect(0, 0, w, h);
+    context.translate(w >> 1, h >> 1);
+    context.textAlign = "center";
+    context.scale(canvas.width / 64, canvas.height / 64);
+    context.fillText(x+','+y, 0,-5);
+    context.fillText(z+'-'+l, 0, 5);
+  }
+  return new CanvasTexture(canvas);
 }
-
 
 export class Cache {
 
@@ -202,7 +194,7 @@ export class Cache {
       let pageId = undefined, lastFrame = Number.MAX_VALUE, hits = Number.MAX_VALUE;
       for (let i = 0; i < this.pages.length; ++i) {
         const page = this.pages[i];
-        if (page.forced) continue;
+        if (page.forced || page.pending) continue;
         if (page.lastFrame < lastFrame || (page.lastFrame == lastFrame && page.hits < hits) ) {
           lastFrame = page.lastFrame;
           hits = page.hits;
@@ -215,9 +207,10 @@ export class Cache {
       }
 
       this.freePages[pageId] = true;
+      this.pages[pageId].pending = true;
       return pageId;
     } catch (e) {
-      console.log(e.stack);
+      console.error(e.stack);
     }
   }
 
@@ -262,25 +255,18 @@ export class Cache {
     const pos = new Vector2();
     for(const pageId in this.newTiles) {
       const tile = this.newTiles[pageId];
+      delete this.newTiles[pageId];
       if (!tile.loaded) continue;
+      function copyTextureToTexture(image, x, y, level) {
+        const texture = createTexture(image, tile.x, tile.y, tile.z, level, scope.maxLevel, tile.x0, tile.y0, scope.padding, scope.realTileSize, scope.debug);
+        pos.set(x >> level, y >> level);
+        renderer.copyTextureToTexture(pos, texture, scope.texture, level);
+      }
+      scope.pages[pageId].image = tile.image;
       let x = this.realTileSize.x * this.getPageX(pageId)+tile.x0;
       let y = this.realTileSize.y * this.getPageY(pageId)+tile.y0;
-      let level = 0;
-      function buildMipMaps(bitmap) {
-        tile.image = bitmap;
-        if (scope.debug) tile.image = createAnnotatedImageData(bitmap, tile.x, tile.y, tile.z, level, scope.maxLevel, tile.x0, tile.y0, scope.padding, scope.realTileSize);
-        pos.set(x, y);
-        renderer.copyTextureToTexture(pos, tile, scope.texture, level);
-        x >>= 1;
-        y >>= 1;
-        ++level;
-        if (level <= scope.maxTileLevels)
-          resizeHalf(bitmap).then(buildMipMaps);
-        else
-          scope.pages[pageId].image = bitmap;
-      }
-      createImageBitmap(tile.image).then(buildMipMaps);
-      delete this.newTiles[pageId];
+      for(let level=0; level<=this.maxTileLevels; ++level)
+        copyTextureToTexture(tile.image, x, y, level);
     }
   }
 
@@ -302,9 +288,10 @@ export class Cache {
       const pageId = this.reservePage(tile.id);
       this.newTiles[pageId] = tile;
       this.pages[pageId].forced = tile.forced;
-      return pageId;
+      this.pages[pageId].pending = false;
+      this.callback(pageId,tile);
     } catch (e) {
-      console.log(e.stack);
+      console.error(e.stack);
     }
   }
 };
