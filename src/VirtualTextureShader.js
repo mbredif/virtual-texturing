@@ -13,6 +13,7 @@ const pars_fragment = [
   " vec2 padding;",
   " vec2 tileSize;",
   " vec2 numPages;",
+  " float minMipMapLevel;",
   " float maxMipMapLevel;",
   " float maxAniso;",
   "};",
@@ -40,7 +41,7 @@ const pars_fragment = [
     "inPageUv = vt.padding + inPageUv * paddingScale;",
 
     // compute lod and move inPageUv so that footprint stays in tile
-    "lod = clamp(lod - (vt.maxMipMapLevel - page.z), 0., vt.maxMipMapLevel);",
+    "lod = clamp(lod - (vt.maxMipMapLevel - page.z), vt.minMipMapLevel, vt.maxMipMapLevel);",
     "vec4 clamping;",
     "clamping.xy = min(vec2(0.5), exp2(lod)/vt.tileSize);",
     "clamping.zw = 1.-clamping.xy;",
@@ -71,7 +72,7 @@ const pars_fragment = [
     "gx *= scale;",
     "gy *= scale;",
     "float d = max(dot( gx, gx ), dot( gy, gy ) );",
-    "float lod = clamp(0.5 * log2( d ) - vt.maxMipMapLevel, 0., vt.maxMipMapLevel);",
+    "float lod = clamp(0.5 * log2( d ) - vt.maxMipMapLevel, vt.minMipMapLevel, vt.maxMipMapLevel);",
 
     // clamp inPageUv
     "vec4 clamping;",
@@ -95,18 +96,6 @@ const pars_fragment = [
     "return page;",
   "}",
 
-  "vec4 vt_textureBasic(in VirtualTexture vt, in vec2 uv, out vec4 page) {",
-      "page = vt_textureCoords(vt, uv);",
-      "return texture(vt.texture, uv);",
-  "}",
-
-  "vec4 vt_textureGradBasic(in VirtualTexture vt, in vec2 uv, out vec4 page) {",
-      "page = vt_textureCoords(vt, uv);",
-      "vec2 gx = dFdx(uv);",
-      "vec2 gy = dFdy(uv);",
-      "return textureGrad(vt.texture, uv, gx, gy);",
-  "}",
-
   "vec4 vt_textureLod(in VirtualTexture vt, in vec2 uv, in float lod, out vec4 page) {",
       "float _lod = lod;",
       "page = vt_textureCoordsLod(vt, uv, _lod);",
@@ -120,7 +109,6 @@ const pars_fragment = [
       "return textureGrad(vt.texture, uv, _gx, _gy);",
   "}",
 
-  "vec4 vt_textureBasic(in VirtualTexture vt, in vec2 uv) { vec4 page; return vt_textureBasic(vt, uv, page); }",
   "vec4 vt_textureLod(in VirtualTexture vt, in vec2 uv, in float lod) { vec4 page; return vt_textureLod(vt, uv, lod, page); }",
   "vec4 vt_textureGrad(in VirtualTexture vt, in vec2 uv, in vec2 gx, in vec2 gy) { vec4 page; return vt_textureGrad(vt, uv, gx, gy, page); }",
 

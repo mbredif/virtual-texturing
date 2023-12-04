@@ -108,10 +108,13 @@ export class VirtualTexture {
   updateVisibleTileMaterial ( ) {
 
     const uniforms = this.tileDetermination.visibleTileMaterial.uniforms;
-    uniforms.vt_size.value = [ this.size[0] * this.tileDetermination.ratio, this.size[1] * this.tileDetermination.ratio];
-    uniforms.vt_minMipMapLevel.value = this.minMipMapLevel;
-    uniforms.vt_maxMipMapLevel.value = this.maxMipMapLevel;
-    uniforms.vt_tileCount.value = this.tileCount;
+    const vt = uniforms.vt.value;
+    vt.tileSize =  [ this.cache.realTileSize.x * this.tileDetermination.ratio , this.cache.realTileSize.y* this.tileDetermination.ratio ];
+    vt.minMipMapLevel = this.minMipMapLevel;
+    vt.maxMipMapLevel = this.maxMipMapLevel;
+    vt.maxAniso = this.cache.texture.anisotropy;
+    vt.id = 255;
+    uniforms.iTextureMode.value = this.textureMode;
 
   }
 
@@ -135,6 +138,7 @@ export class VirtualTexture {
     vt.padding = [ this.cache.padding/this.cache.realTileSize.x , this.cache.padding/this.cache.realTileSize.y ];
     vt.tileSize = [ this.cache.realTileSize.x , this.cache.realTileSize.y ];
     vt.numPages = [ this.cache.pageCount.x , this.cache.pageCount.y ];
+    vt.minMipMapLevel = this.minMipMapLevel;
     vt.maxMipMapLevel = this.maxMipMapLevel;
     vt.maxAniso = vt.texture.anisotropy;
     uniforms.bDebugLevel.value = this.debugLevel;

@@ -1,11 +1,8 @@
 import { UniformsLib, ShaderChunk } from '../examples/jsm/three.module.js';
 
 const uniforms = {
-  "vt_size":  { value: [ 0, 0 ] },
-  "vt_minMipMapLevel":  {  value: 0.0 },
-  "vt_maxMipMapLevel":  {  value: 0.0 },
-  "vt_tileCount":        { value: [ 0, 0 ] },
-  "vt_id": { value: 255.0 }
+  "vt" : { value: {} },
+  "iTextureMode" : { value: 0 },
 };
 
 const pars_vertex = [
@@ -20,32 +17,53 @@ const vertex = [
 
 const pars_fragment = [
 
-  "uniform vec2 vt_size;",
-  "uniform float vt_minMipMapLevel;",
-  "uniform float vt_maxMipMapLevel;",
-  "uniform float vt_id;",
-  "uniform float vt_tileCount;",
+  "struct VirtualTexture {",
+  " vec2 tileSize;",
+  " float minMipMapLevel;",
+  " float maxMipMapLevel;",
+  " float maxAniso;",
+  " float id;",
+  "};",
+  "uniform VirtualTexture vt;",
+  "uniform int iTextureMode;",
 
   "varying vec2 vUv;",
 
-  "float MipLevel(vec2 uv, vec2 size)",
+  "vec3 vt_textureTileGrad(in VirtualTexture vt, in vec2 uv)",
   "{",
-    "vec2 coordPixels = uv * size;",
+    "vec2 coordPixels = uv * vt.tileSize;",
     "vec2 dx = dFdx(coordPixels);",
     "vec2 dy = dFdy(coordPixels);",
-    "float d = min(dot( dx, dx ), dot( dy, dy ) );",
-    "return 0.5 * log2( d );",
+    "float dx2 = dot(dx, dx);",
+    "float dy2 = dot(dy, dy);",
+    "float mipLevel = vt.maxMipMapLevel + 0.5 * log2( max( min(dx2, dy2), max(dx2, dy2)/vt.maxAniso ));",
+    "float z = clamp(floor(mipLevel), vt.minMipMapLevel, vt.maxMipMapLevel);",
+    "float size = floor(exp2(vt.maxMipMapLevel - z));",
+    "vec2 xy = clamp(floor( uv * size ), 0., size-1.);",
+    "return vec3(xy, z);",
+  "}",
+
+  "vec3 vt_textureTileLod(in VirtualTexture vt, in vec2 uv)",
+  "{",
+    "vec2 coordPixels = uv * vt.tileSize;",
+    "vec2 dx = dFdx(coordPixels);",
+    "vec2 dy = dFdy(coordPixels);",
+    "float dx2 = dot(dx, dx);",
+    "float dy2 = dot(dy, dy);",
+    "float mipLevel = vt.maxMipMapLevel + 0.5 * log2(max(dx2, dy2));",
+    "float z = clamp(floor(mipLevel), vt.minMipMapLevel, vt.maxMipMapLevel);",
+    "float size = floor(exp2(vt.maxMipMapLevel - z));",
+    "vec2 xy = clamp(floor( uv * size ), 0., size-1.);",
+    "return vec3(xy, z);",
   "}"
 
 ].join("\n");
 
 const fragment = [
-  "float mipLevel  = floor( MipLevel( vUv, vt_size ));",
-  "mipLevel = clamp(mipLevel, vt_minMipMapLevel, vt_maxMipMapLevel);",
-  "float size = floor(exp2(vt_maxMipMapLevel-mipLevel));",
-  "vec2 id = floor( vUv.xy * size );",
-  "id = clamp(id, 0., size-1.);",
-  "gl_FragColor = vec4(id, mipLevel, vt_id)/255.0;"
+  "switch (iTextureMode) {",
+  "  case 0 : gl_FragColor = vec4(vt_textureTileGrad(vt, vUv), vt.id)/255.; break;",
+  "  case 1 : gl_FragColor = vec4(vt_textureTileLod(vt, vUv), vt.id)/255.; break;",
+  "}",
 ].join("\n");
 
 
