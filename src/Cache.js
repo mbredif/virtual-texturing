@@ -72,6 +72,7 @@ export class Cache {
       this.pages.push(new Page());
     }
 
+    this.lastFrame = 0;
     this.debug = false;
     this.initTexture();
     this.clear();
@@ -198,12 +199,12 @@ export class Cache {
   // this function gets called when no pageIds are free
   freePage () {
     try {
-      let pageId = undefined, lastHits = Number.MAX_VALUE, hits = Number.MAX_VALUE;
+      let pageId = undefined, lastFrame = Number.MAX_VALUE, hits = Number.MAX_VALUE;
       for (let i = 0; i < this.pages.length; ++i) {
         const page = this.pages[i];
         if (page.forced) continue;
-        if (page.lastHits < lastHits || (page.lastHits == lastHits && page.hits < hits) ) {
-          lastHits = page.lastHits;
+        if (page.lastFrame < lastFrame || (page.lastFrame == lastFrame && page.hits < hits) ) {
+          lastFrame = page.lastFrame;
           hits = page.hits;
           pageId = i;
         }
@@ -284,11 +285,12 @@ export class Cache {
   }
 
   updateUsage(usageTable, renderCount) {
+    this.lastFrame = renderCount;
     for (let tileId in usageTable.table) {
       if (usageTable.table.hasOwnProperty(tileId)) {
         const pageId = this.cachedPages[tileId];
         if (pageId !== undefined) {
-          this.pages[pageId].lastHits = renderCount;
+          this.pages[pageId].lastFrame = renderCount;
           this.pages[pageId].hits = usageTable.table[tileId];
         }
       }

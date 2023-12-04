@@ -62,17 +62,20 @@ export class CacheDebug {
 
     ctx.reset();
     for(const pageId in cache.pages) {
-    	const page = cache.pages[pageId];
-    	const x = cache.getPageX(pageId);
-    	const y = cache.getPageY(pageId);
-    	const z = cache.getPageZ(pageId);
-    	ctx.save();
-        ctx.textAlign = "center";
-    	ctx.translate(x*sx, y*sy);
-    	if(page.image) ctx.drawImage(page.image, 0, 0, sx, sy);
-    	ctx.fillText(page.hits, sx>>1, sy*0.25);
-    	ctx.fillText(page.lastHits, sx>>1, sy*0.75);
-    	ctx.restore();
+      const page = cache.pages[pageId];
+      const x = cache.getPageX(pageId);
+      const y = cache.getPageY(pageId);
+      const z = cache.getPageZ(pageId);
+      const age = cache.lastFrame-page.lastFrame;
+      ctx.save();
+      ctx.fillStyle = age==0?'rgb(255,0,0)':`rgb(0,${256-age},${age})`;
+      ctx.strokeStyle = '#00000';
+      ctx.textAlign = "center";
+      ctx.translate(x*sx, y*sy);
+      if(page.image) ctx.drawImage(page.image, 0, 0, sx, sy);
+      ctx.strokeText(page.hits, sx>>1, sy>>1);
+      ctx.fillText(page.hits, sx>>1, sy>>1);
+      ctx.restore();
     }
     this.divTitle.innerHTML = "Cached Tiles (Texture Pages)" + JSON.stringify(cache.getStatus());
   }

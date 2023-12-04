@@ -105,7 +105,7 @@ export class IndirectionTable {
           this.dataArrays[z][offset    ] = cache.getPageX(pageId);
           this.dataArrays[z][offset + 1] = cache.getPageY(pageId);
           this.dataArrays[z][offset + 2] = cache.getPageZ(pageId);
-          this.dataArrays[z][offset + 3] = Math.min(255, renderCount - cache.pages[pageId].lastHits);
+          this.dataArrays[z][offset + 3] = Math.min(255, renderCount - cache.pages[pageId].lastFrame);
         }
       }
     }

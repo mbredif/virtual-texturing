@@ -8,7 +8,7 @@ export class Page {
     this.z = 0;
     this.forced = false;
     this.tileId = null;
-    this.lastHits = 0;
+    this.lastFrame = 0;
     this.hits = 0;
   }
 };
