@@ -1,6 +1,8 @@
 //
 //
 //
+import { TileId } from './TileId.js';
+import { Tile } from './Tile.js';
 
 export class TileQueue {
   constructor(maxLoading) {
@@ -86,5 +88,29 @@ export class TileQueue {
   clear(cancel = false) {
     this.tiles.length = 0;
     //todo : if cancel, cancel images that are currently loading or deconnect their onload
+  }
+
+  reset(z) {
+    this.clear(true);
+    const size = 1 << z;
+    for (let y = 0; y < size; ++y) {
+      for (let x = 0; x < size; ++x) {
+        const id = TileId.create(x, y, z);
+        const tile = new Tile(id, Number.MAX_VALUE, true);
+        this.push(tile);
+      }
+    }
+  }
+
+  update(usageTable, cache) {
+    this.clear();
+    for (const tileId in usageTable) {
+      if (!usageTable.hasOwnProperty(tileId)) continue;
+      if(this.pending[tileId]===undefined && !cache.contains(tileId)) {
+        const hits = usageTable[tileId];
+        const tile = new Tile(tileId, hits);
+        this.push(tile);
+      }
+    }
   }
 };

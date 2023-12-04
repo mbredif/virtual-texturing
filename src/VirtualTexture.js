@@ -2,13 +2,11 @@
  * @author elfrank - http://franciscoavila.mx
  */
 
- import { Cache, StatusNotAvailable, StatusAvailable, StatusPendingDelete } from './Cache.js';
+ import { Cache } from './Cache.js';
  import { TileDetermination } from './TileDetermination.js';
  import { IndirectionTable } from './IndirectionTable.js';
  import { TileQueue } from './TileQueue.js';
  import { UsageTable } from './UsageTable.js';
- import { TileId } from './TileId.js';
- import { Tile } from './Tile.js';
  import { VirtualTextureShader } from './VirtualTextureShader.js';
  import { UniformsUtils, ShaderMaterial } from '../examples/jsm/three.module.js';
 
@@ -81,88 +79,67 @@ export class VirtualTexture {
 
   }
 
-    init() {
-      this.resetCache();
-      this.needsUpdate = true;
-    }
+  init() {
 
-    resetCache () {
+    this.resetCache();
+    this.needsUpdate = true;
 
-      this.tileQueue.clear();
-      this.cache.clear();
-      this.indirectionTable.clear();
+  }
 
-      const z = this.minMipMapLevel;
-      const size = 1 << z;
-      for (let y = 0; y < size; ++y) {
-        for (let x = 0; x < size; ++x) {
-          const id = TileId.create(x, y, z);
-          const tile = new Tile(id, Number.MAX_VALUE, true);
-          this.tileQueue.push(tile);
-        }
-      }
+  resetCache () {
 
-    }
+    this.cache.clear();
+    this.tileQueue.reset(this.minMipMapLevel);
+    this.indirectionTable.clear();
 
-    restoreOrEnqueueVisibleUncachedTiles() {
-      this.tileQueue.clear();
-      for (const tileId in this.usageTable.table) {
-        if (!this.usageTable.table.hasOwnProperty(tileId)) continue;
-        if(this.tileQueue.pending[tileId]===undefined && !this.cache.contains(tileId)) {
-          const hits = this.usageTable.table[tileId];
-          const tile = new Tile(tileId, hits);
-          this.tileQueue.push(tile);
-        }
-      
-      }
-    }
+  }
 
-    update (renderer, scene, camera) {
+  update (renderer, scene, camera) {
 
-      this.updateVisibleTileMaterial();
-      this.tileDetermination.update( renderer, scene, camera );
-      this.usageTable.update( this.tileDetermination.data );
-      this.restoreOrEnqueueVisibleUncachedTiles();
-      this.cache.update( renderer, this.usageTable );
-      this.indirectionTable.update( this.cache, renderer.renderCount );
+    this.updateVisibleTileMaterial();
+    this.tileDetermination.update( renderer, scene, camera );
+    this.usageTable.update( this.tileDetermination.data );
+    this.cache.update( renderer, this.usageTable );
+    this.tileQueue.update( this.usageTable.table, this.cache);
+    this.indirectionTable.update( this.cache, renderer.renderCount );
 
-    }
+  }
 
-    updateVisibleTileMaterial ( ) {
+  updateVisibleTileMaterial ( ) {
 
-      const uniforms = this.tileDetermination.visibleTileMaterial.uniforms;
-      uniforms.vt_size.value = [ this.size[0] * this.tileDetermination.ratio, this.size[1] * this.tileDetermination.ratio];
-      uniforms.vt_minMipMapLevel.value = this.minMipMapLevel;
-      uniforms.vt_maxMipMapLevel.value = this.maxMipMapLevel;
-      uniforms.vt_tileCount.value = this.tileCount;
+    const uniforms = this.tileDetermination.visibleTileMaterial.uniforms;
+    uniforms.vt_size.value = [ this.size[0] * this.tileDetermination.ratio, this.size[1] * this.tileDetermination.ratio];
+    uniforms.vt_minMipMapLevel.value = this.minMipMapLevel;
+    uniforms.vt_maxMipMapLevel.value = this.maxMipMapLevel;
+    uniforms.vt_tileCount.value = this.tileCount;
 
-    };
+  }
 
-    createMaterial ( parameters, textureName ) {
+  createMaterial ( parameters, textureName ) {
 
-      const material = new ShaderMaterial( parameters );
-      const uniforms = VirtualTextureShader.uniforms;
-      material.uniforms = UniformsUtils.merge( [ uniforms, material.uniforms ] ),
-      material.virtualTextureName = textureName;
-      this.updateUniforms( material );
-      return material;
+    const material = new ShaderMaterial( parameters );
+    const uniforms = VirtualTextureShader.uniforms;
+    material.uniforms = UniformsUtils.merge( [ uniforms, material.uniforms ] ),
+    material.virtualTextureName = textureName;
+    this.updateUniforms( material );
+    return material;
 
-    };
+  }
 
-    updateUniforms ( material ) {
+  updateUniforms ( material ) {
 
-      const uniforms = material.uniforms;
-      const vt = uniforms[material.virtualTextureName].value;
-      vt.texture = this.cache.texture;
-      vt.cacheIndirection = this.indirectionTable.texture;
-      vt.padding = [ this.cache.padding/this.cache.realTileSize.x , this.cache.padding/this.cache.realTileSize.y ];
-      vt.tileSize = [ this.cache.realTileSize.x , this.cache.realTileSize.y ];
-      vt.numPages = [ this.cache.pageCount.x , this.cache.pageCount.y ];
-      vt.maxMipMapLevel = this.maxMipMapLevel;
-      vt.maxAniso = vt.texture.anisotropy;
-      uniforms.bDebugLevel.value = this.debugLevel;
-      uniforms.bDebugLastHits.value = this.debugLastHits;
-      uniforms.iTextureMode.value = this.textureMode;
+    const uniforms = material.uniforms;
+    const vt = uniforms[material.virtualTextureName].value;
+    vt.texture = this.cache.texture;
+    vt.cacheIndirection = this.indirectionTable.texture;
+    vt.padding = [ this.cache.padding/this.cache.realTileSize.x , this.cache.padding/this.cache.realTileSize.y ];
+    vt.tileSize = [ this.cache.realTileSize.x , this.cache.realTileSize.y ];
+    vt.numPages = [ this.cache.pageCount.x , this.cache.pageCount.y ];
+    vt.maxMipMapLevel = this.maxMipMapLevel;
+    vt.maxAniso = vt.texture.anisotropy;
+    uniforms.bDebugLevel.value = this.debugLevel;
+    uniforms.bDebugLastHits.value = this.debugLastHits;
+    uniforms.iTextureMode.value = this.textureMode;
 
-    };
+  }
 };

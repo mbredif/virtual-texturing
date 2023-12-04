@@ -40,7 +40,7 @@ const pars_fragment = [
 ].join("\n");
 
 const fragment = [
-  "float mipLevel  = floor( MipLevel( vUv, vt_size )+0.5);",
+  "float mipLevel  = floor( MipLevel( vUv, vt_size ));",
   "mipLevel = clamp(mipLevel, vt_minMipMapLevel, vt_maxMipMapLevel);",
   "float size = floor(exp2(vt_maxMipMapLevel-mipLevel));",
   "vec2 id = floor( vUv.xy * size );",

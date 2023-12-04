@@ -42,6 +42,7 @@ export class TileDeterminationDebug {
     this.canvas.height = height;
     this.canvas.style.top = "0px";
     this.canvas.style.left = "0px";
+    this.canvas.style.width = "100%";
     this.canvas.style.position = position;
     this.canvas.style.zIndex = zIndex;
     this.canvas.style.borderColor = borderColor;

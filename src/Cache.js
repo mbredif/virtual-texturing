@@ -196,9 +196,14 @@ export class Cache {
     this.updateUsage(usageTable, renderer.renderCount);
   }
 
+  copyTextureToTexture(renderer, tile, x, y, level) {
+    const texture = createTexture(tile.image, tile.x, tile.y, tile.z, level, this.maxLevel, tile.x0, tile.y0, this.padding, this.realTileSize, this.debug);
+    const pos = new Vector2(x >> level, y >> level);
+    renderer.copyTextureToTexture(pos, texture, this.texture, level);
+  }
+
   updateTiles(renderer) {
     const scope = this;
-    const pos = new Vector2();
     const pageIds = [];
     const tileIds = [];
     for(const tile of this.newTiles) {
@@ -210,15 +215,10 @@ export class Cache {
       page.pending = true;
       pageIds.push(pageId);
       tileIds.push(tile.id);
-      function copyTextureToTexture(image, x, y, level) {
-        const texture = createTexture(image, tile.x, tile.y, tile.z, level, scope.maxLevel, tile.x0, tile.y0, scope.padding, scope.realTileSize, scope.debug);
-        pos.set(x >> level, y >> level);
-        renderer.copyTextureToTexture(pos, texture, scope.texture, level);
-      }
       let x = this.realTileSize.x * this.getPageX(pageId)+tile.x0;
       let y = this.realTileSize.y * this.getPageY(pageId)+tile.y0;
       for(let level=0; level<=this.maxTileLevels; ++level)
-        copyTextureToTexture(tile.image, x, y, level);
+        this.copyTextureToTexture(renderer, tile, x, y, level);
       this.callback(pageId,tile);
     }
     this.newTiles.length = 0;
