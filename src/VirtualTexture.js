@@ -62,7 +62,7 @@ export class VirtualTexture {
     this.tileQueue.callback = function (tile) {
       var status = scope.cache.getPageStatus(tile.id); // was parentId... not sure why
       if (status !== StatusAvailable) {
-        var pageId = scope.cache.cacheTile(tile, tile.id == 0);
+        var pageId = scope.cache.cacheTile(tile);
         scope.indirectionTable.add(tile.id, pageId);
       }
       scope.needsUpdate = true;
@@ -97,7 +97,7 @@ export class VirtualTexture {
       for (let y = 0; y < size; ++y) {
         for (let x = 0; x < size; ++x) {
           const id = TileId.create(x, y, z);
-          const tile = new Tile(id, Number.MAX_VALUE);
+          const tile = new Tile(id, Number.MAX_VALUE, true);
           this.tileQueue.push(tile);
         }
       }

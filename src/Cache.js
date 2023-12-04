@@ -109,12 +109,6 @@ export class Cache {
     }
   }
 
-  // if possible, move page to the free list
-  releasePage (id) {
-    var pageId = this.cachedPages[id];
-    if (undefined !== pageId) this.freePages[pageId] = true;
-  }
-
   getPageX (pageId) {
     return pageId % this.pageCount.x;
   }
@@ -301,11 +295,11 @@ export class Cache {
     }
   }
 
-  cacheTile (tile, forced) {
+  cacheTile (tile) {
     try {
       const pageId = this.reservePage(tile.id);
       this.newTiles[pageId] = tile;
-      this.pages[pageId].forced = forced;
+      this.pages[pageId].forced = tile.forced;
       return pageId;
     } catch (e) {
       console.log(e.stack);

@@ -7,19 +7,15 @@ export class TileQueue {
     this.maxLoading = maxLoading;
     this.onLoading = 0;
     this.loadCount = 0;
-
     this.callback = null;
-
     this.tiles = [];
     this.sorted = false;
   }
 
   push(tile) {
-
     this.tiles.push(tile);
     this.sorted = false;
     this.process();
-
   }
 
   process() {
@@ -45,8 +41,6 @@ export class TileQueue {
         tile.x0 = filePath.x0 || 0;
         tile.y0 = filePath.y0 || 0;
 
-        // console.log('Tile ' + tile.x + ',' + tile.y + '@' + tile.z + ' loaded | Count: ' + scope.loadCount, tile );
-
         scope.process();
         if (scope.callback) scope.callback(tile);
       };
@@ -56,10 +50,8 @@ export class TileQueue {
   }
 
   pop() {
-
     this.sort();
     return this.tiles.pop();
-
   }
 
   empty() {
@@ -75,10 +67,8 @@ export class TileQueue {
   }
 
   top() {
-
     this.sort();
     return this.tiles[this.tiles.length - 1];
-
   }
 
   sort() {

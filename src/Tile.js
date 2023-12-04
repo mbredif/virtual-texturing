@@ -4,7 +4,7 @@
 import { TileId } from './TileId.js'
 
 export class Tile {
-  constructor(id, hits) {
+  constructor(id, hits, forced = false) {
     this.id = id;
     this.hits = (undefined !== hits) ? hits : 0;
     this.x = TileId.getX(id);
@@ -12,5 +12,6 @@ export class Tile {
     this.z = TileId.getZ(id);
     this.loaded = false;
     this.image = undefined;
+    this.forced = forced;
   }
 };
