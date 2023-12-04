@@ -55,8 +55,7 @@ export class Cache {
     this.texture = null;
 
     this.cachedPages = {}; // tileId -> pageId
-    this.newTiles = {}; // pageId -> Tile
-    this.freePages = []; // pageId -> bool
+    this.newTiles = []; // Tile
     this.pages = []; // pageId -> Page
 
     const numPages = this.pageCount.x * this.pageCount.y;
@@ -129,104 +128,53 @@ export class Cache {
     }
   }
 
-  getPageStatus (id) {
+  contains (id) {
     const pageId = this.cachedPages[id];
-    if (pageId === undefined) {
-      return StatusNotAvailable;
-    }
+    if (pageId === undefined) return false;
 
     const page = this.pages[pageId];
+    if (page === undefined) return false;
 
-    if (undefined === page) {
-      console.error(pageId, id, 'undefined page');
-      return StatusNotAvailable;
-    }
-
-    if (!page.valid) {
-      return StatusNotAvailable;
-    }
-
-    if (this.freePages[pageId]) {
-      return StatusPendingDelete;
-    }
-
-    return StatusAvailable;
-  }
-
-  restorePage (id) {
-    const pageId = this.cachedPages[id];
-    if (pageId === undefined)  return -1;
-    this.freePages[pageId] = false;
-    return pageId;
+    return page.valid;
   }
 
   getStatus () {
-    let usedPages = this.pages.reduce((count, page) => count + page.valid , 0);
-    let freePages = this.freePages.reduce((count, freePage) => count + freePage , 0);
-
+    let validPages = this.pages.reduce((count, page) => count + page.valid , 0);
     return {
-      used: usedPages,
-      markedFree: this.pages.length - usedPages,
-      free: freePages
+      valid: validPages,
+      invalid: this.pages.length - validPages,
     }
   }
 
   clear () {
     this.cachedPages = {};
-    this.freePages = [];
 
     for (let i = 0; i < this.pages.length; ++i) {
       this.pages[i].image = undefined;
       this.pages[i].valid = false;
-      this.freePages[i] = true;
     }
-  }
-
-  getNextFreePage () {
-      let pageId = this.freePages.findIndex(value => value);
-      return (pageId < 0) ? this.freePage() : pageId;
   }
 
   // find one pageId and free it
   // this function gets called when no pageIds are free
-  freePage () {
-    try {
-      let pageId = undefined, lastFrame = Number.MAX_VALUE, hits = Number.MAX_VALUE;
-      for (let i = 0; i < this.pages.length; ++i) {
-        const page = this.pages[i];
-        if (page.forced || page.pending) continue;
-        if (page.lastFrame < lastFrame || (page.lastFrame == lastFrame && page.hits < hits) ) {
-          lastFrame = page.lastFrame;
-          hits = page.hits;
-          pageId = i;
-        }
+  freePage (id) {
+    let pageId = undefined, lastFrame = Number.MAX_VALUE, hits = Number.MAX_VALUE;
+    for (let i = 0; i < this.pages.length; ++i) {
+      const page = this.pages[i];
+      if (!page.valid || page.tileId==id) return i;
+      if (page.forced || page.pending) continue;
+      if (page.lastFrame < lastFrame || (page.lastFrame == lastFrame && page.hits < hits) ) {
+        lastFrame = page.lastFrame;
+        hits = page.hits;
+        pageId = i;
       }
-
-      if (undefined === pageId) {
-        console.error("FreePageNotFound");
-      }
-
-      this.freePages[pageId] = true;
-      this.pages[pageId].pending = true;
-      return pageId;
-    } catch (e) {
-      console.error(e.stack);
     }
-  }
-
-  hasFreePage () {
-    return this.freePages.includes(true);
+    return pageId;
   }
 
   reservePage (id) {
-    // try to restore
-    let pageId = this.restorePage(id);
-    if (pageId >= 0) {
-      return pageId;
-    }
-
     // get the next free page
-    pageId = this.getNextFreePage();
+    const pageId = this.freePage(id);
 
     // if valid, remove it now, (otherwise handles leak)
     const page = this.pages[pageId];
@@ -236,12 +184,10 @@ export class Cache {
     }
 
     // update pageId
-    this.freePages[pageId] = false;
     this.cachedPages[id] = pageId;
     page.z = TileId.getZ(id);
     page.tileId = id;
     page.valid = true;
-
     return pageId;
   }
 
@@ -253,21 +199,30 @@ export class Cache {
   updateTiles(renderer) {
     const scope = this;
     const pos = new Vector2();
-    for(const pageId in this.newTiles) {
-      const tile = this.newTiles[pageId];
-      delete this.newTiles[pageId];
-      if (!tile.loaded) continue;
+    const pageIds = [];
+    const tileIds = [];
+    for(const tile of this.newTiles) {
+      const pageId = this.reservePage(tile.id);
+      if(pageId == undefined) break; // all pages are already used for the current frame
+      const page = this.pages[pageId];
+      page.forced = tile.forced;
+      page.image = tile.image;
+      page.pending = true;
+      pageIds.push(pageId);
+      tileIds.push(tile.id);
       function copyTextureToTexture(image, x, y, level) {
         const texture = createTexture(image, tile.x, tile.y, tile.z, level, scope.maxLevel, tile.x0, tile.y0, scope.padding, scope.realTileSize, scope.debug);
         pos.set(x >> level, y >> level);
         renderer.copyTextureToTexture(pos, texture, scope.texture, level);
       }
-      scope.pages[pageId].image = tile.image;
       let x = this.realTileSize.x * this.getPageX(pageId)+tile.x0;
       let y = this.realTileSize.y * this.getPageY(pageId)+tile.y0;
       for(let level=0; level<=this.maxTileLevels; ++level)
         copyTextureToTexture(tile.image, x, y, level);
+      this.callback(pageId,tile);
     }
+    this.newTiles.length = 0;
+    for(const pageId of pageIds) this.pages[pageId].pending=false;
   }
 
   updateUsage(usageTable, renderCount) {
@@ -284,14 +239,6 @@ export class Cache {
   }
 
   cacheTile (tile) {
-    try {
-      const pageId = this.reservePage(tile.id);
-      this.newTiles[pageId] = tile;
-      this.pages[pageId].forced = tile.forced;
-      this.pages[pageId].pending = false;
-      this.callback(pageId,tile);
-    } catch (e) {
-      console.error(e.stack);
-    }
+    this.newTiles.push(tile);
   }
 };

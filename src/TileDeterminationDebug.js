@@ -13,7 +13,7 @@ export class TileDeterminationDebug {
     var zIndex = "100";
     var borderColor = "red";
     var borderStyle = "solid";
-    var borderWidth = 1;
+    var borderWidth = 0;
 
     var fontSize = 13; // in pixels
     var fontFamily = "Arial";
@@ -40,8 +40,8 @@ export class TileDeterminationDebug {
     this.canvas = document.createElement('canvas');
     this.canvas.width =  width;
     this.canvas.height = height;
-    this.canvas.style.top = verticalPosition + lineHeight + "px";
-    this.canvas.style.left = horizontalPosition + "px";
+    this.canvas.style.top = "0px";
+    this.canvas.style.left = "0px";
     this.canvas.style.position = position;
     this.canvas.style.zIndex = zIndex;
     this.canvas.style.borderColor = borderColor;

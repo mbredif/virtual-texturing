@@ -88,6 +88,7 @@ export class VirtualTexture {
 
     resetCache () {
 
+      this.tileQueue.clear();
       this.cache.clear();
       this.indirectionTable.clear();
 
@@ -104,57 +105,15 @@ export class VirtualTexture {
     }
 
     restoreOrEnqueueVisibleUncachedTiles() {
+      this.tileQueue.clear();
       for (const tileId in this.usageTable.table) {
-        if (this.usageTable.table.hasOwnProperty(tileId)) {
-          let pageX = TileId.getX(tileId);
-          let pageY = TileId.getY(tileId);
-          let pageZ = TileId.getZ(tileId);
-          let size = 1 << pageZ;
-
-          if (pageX >= size || pageY >= size || pageX < 0 || pageY < 0) {
-            // FIXME: Pending bug
-            console.error('Out of bounds error:\npageX: ' + pageX + '\npageY: ' + pageY + '\npageZ: ' + pageZ);
-            continue;
-          }
-
-          const status = this.cache.getPageStatus(tileId);
-
-          // if page is pending delete, try to restore it
-          let wasRestored = false;
-          if (StatusPendingDelete === status) {
-            pageId = this.cache.restorePage(tileId);
-            if (pageId != -1) {
-              this.indirectionTable.setPage(pageX, pageY, pageZ, pageId);
-              wasRestored = true;
-            }
-          }
-
-          if ((StatusAvailable !== status) && !wasRestored) {
-
-            const minParentZ = this.useProgressiveLoading ? this.minMipMapLevel : (pageZ - 1);
-
-            // request the page and all parents
-            while (pageZ > minParentZ) {
-
-              const newTileId = TileId.create(pageX, pageY, pageZ);
-              const newPageStatus = this.cache.getPageStatus(newTileId);
-
-              // FIXME: should try to restore page?
-              //pageId = this.cache.restorePage(newTileId);
-              //if ((StatusAvailable !== newPageStatus) && pageId == -1) {
-              if ((StatusAvailable !== newPageStatus)) {
-                if (!this.tileQueue.contains(newTileId)) {
-                  const hits = this.usageTable.table[tileId];
-                  const tile = new Tile(newTileId, hits);
-                  this.tileQueue.push(tile);
-                }
-              }
-              pageX >>= 1;
-              pageY >>= 1;
-              --pageZ;
-            }
-          }
+        if (!this.usageTable.table.hasOwnProperty(tileId)) continue;
+        if(this.tileQueue.pending[tileId]===undefined && !this.cache.contains(tileId)) {
+          const hits = this.usageTable.table[tileId];
+          const tile = new Tile(tileId, hits);
+          this.tileQueue.push(tile);
         }
+      
       }
     }
 

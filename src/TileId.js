@@ -23,6 +23,10 @@ export const TileId = {
     return id & 0xF;
   },
 
+  parent : function(id) {
+    return (((id >> 9) & 0x1FFF) << 18) | (((id >> 5) & 0x1FFF) << 4) | ((id+1) & 0xF);
+  },
+
   isValid: function (id) {
     return id == 0xF;
   },
