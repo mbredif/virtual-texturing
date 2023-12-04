@@ -36,10 +36,11 @@ const pars_fragment = [
     "float d = min(dot( dx, dx ), dot( dy, dy ) );",
     "return 0.5 * log2( d );",
   "}"
+
 ].join("\n");
 
 const fragment = [
-  "float mipLevel  = floor( MipLevel( vUv, vt_size ));",
+  "float mipLevel  = floor( MipLevel( vUv, vt_size )+0.5);",
   "mipLevel = clamp(mipLevel, vt_minMipMapLevel, vt_maxMipMapLevel);",
   "float size = floor(exp2(vt_maxMipMapLevel-mipLevel));",
   "vec2 id = floor( vUv.xy * size );",
