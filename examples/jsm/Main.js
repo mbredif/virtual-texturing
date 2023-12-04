@@ -11,6 +11,18 @@ import { Clock, WebGLRenderer, Scene, PerspectiveCamera, Mesh } from '../jsm/thr
 import { MapControls } from '../jsm/OrbitControls.js';
 import { WEBGL } from '../jsm/WebGL.js';
 
+function createStats() {
+  var stats = new Stats();
+  stats.setMode(0);
+
+  stats.domElement.style.position = 'absolute';
+  stats.domElement.style.left = '0';
+  stats.domElement.style.top = '0';
+
+  document.body.appendChild( stats.domElement );
+  return stats;
+}
+
 export class APP {
   constructor(canvas) {
     this.domContainer = document.getElementById(canvas || "canvas_container");
@@ -19,6 +31,7 @@ export class APP {
     this.camera = null;
     this.controls = null;
     this.clock = new Clock();
+    this.stats = createStats();
 
     this.virtualTexture = null;
     console.log("h: toggle debug last hits")
@@ -43,7 +56,7 @@ export class APP {
       case "d": vt.cache.debug = !vt.cache.debug; vt.resetCache(); break;
       case "k": vt.resetCache(); break;
       case "t":
-        const textureModes = ["textureGrad", "textureLod", "textureBasic", "textureGradBasic"];//, "textureGrad0", "textureLod0"];
+        const textureModes = ["textureGrad", "textureLod"];
         vt.textureMode = (vt.textureMode +1) % textureModes.length;
         console.log(textureModes[vt.textureMode]);
         break;
@@ -72,6 +85,7 @@ export class APP {
       this.cacheDebug.update();
     }
     this.renderer.render(this.scene, this.camera);
+    this.stats.update();
   }
 
   run() {

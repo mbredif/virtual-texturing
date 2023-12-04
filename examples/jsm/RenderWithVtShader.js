@@ -29,8 +29,6 @@ export const RenderWithVtShader = {
       "switch (iTextureMode) {",
       "  case 0 : gl_FragColor = vt_textureGrad(vt, uv, gx, gy, page); break;",
       "  case 1 : gl_FragColor = vt_textureLod(vt, uv, vt_lod(gx, gy, vt_size), page); break;",
-      "  case 2 : gl_FragColor = vt_textureBasic(vt, uv, page); break;",
-      "  case 3 : gl_FragColor = vt_textureGradBasic(vt, uv, page); break;",
       "}",
       "if (bDebugLevel) gl_FragColor.r = page.z / vt.maxMipMapLevel;",
       "if (bDebugLastHits) gl_FragColor.g = 1. - (page.w / 255.);",
