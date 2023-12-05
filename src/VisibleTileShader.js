@@ -1,4 +1,4 @@
-import { UniformsLib, ShaderChunk } from '../examples/jsm/three.module.js';
+import { UniformsLib } from '../examples/jsm/three.module.js';
 
 const uniforms = {
   "vt" : { value: {} },
@@ -16,62 +16,22 @@ const vertex = [
 ].join("\n");
 
 const pars_fragment = [
-
-  "struct VirtualTexture {",
-  " vec2 tileSize;",
-  " float minMipMapLevel;",
-  " float maxMipMapLevel;",
-  " float maxAniso;",
-  " float id;",
-  "};",
-  "uniform VirtualTexture vt;",
+  "#include <vt/pars_fragment>",
+  "uniform VirtualTextureTiles vt;",
   "uniform int iTextureMode;",
-
   "varying vec2 vUv;",
-
-  "vec3 vt_textureTileGrad(in VirtualTexture vt, in vec2 uv)",
-  "{",
-    "vec2 coordPixels = uv * vt.tileSize;",
-    "vec2 dx = dFdx(coordPixels);",
-    "vec2 dy = dFdy(coordPixels);",
-    "float dx2 = dot(dx, dx);",
-    "float dy2 = dot(dy, dy);",
-    "float mipLevel = vt.maxMipMapLevel + 0.5 * log2( max( min(dx2, dy2), max(dx2, dy2)/vt.maxAniso ));",
-    "float z = clamp(floor(mipLevel), vt.minMipMapLevel, vt.maxMipMapLevel);",
-    "float size = floor(exp2(vt.maxMipMapLevel - z));",
-    "vec2 xy = clamp(floor( uv * size ), 0., size-1.);",
-    "return vec3(xy, z);",
-  "}",
-
-  "vec3 vt_textureTileLod(in VirtualTexture vt, in vec2 uv)",
-  "{",
-    "vec2 coordPixels = uv * vt.tileSize;",
-    "vec2 dx = dFdx(coordPixels);",
-    "vec2 dy = dFdy(coordPixels);",
-    "float dx2 = dot(dx, dx);",
-    "float dy2 = dot(dy, dy);",
-    "float mipLevel = vt.maxMipMapLevel + 0.5 * log2(max(dx2, dy2));",
-    "float z = clamp(floor(mipLevel), vt.minMipMapLevel, vt.maxMipMapLevel);",
-    "float size = floor(exp2(vt.maxMipMapLevel - z));",
-    "vec2 xy = clamp(floor( uv * size ), 0., size-1.);",
-    "return vec3(xy, z);",
-  "}"
-
 ].join("\n");
 
 const fragment = [
   "switch (iTextureMode) {",
   "  case 0 : gl_FragColor = vec4(vt_textureTileGrad(vt, vUv), vt.id)/255.; break;",
   "  case 1 : gl_FragColor = vec4(vt_textureTileLod(vt, vUv), vt.id)/255.; break;",
+  "  case 2 : gl_FragColor = vec4(vt_textureTile(vt, vUv), vt.id)/255.; break;",
+  "  default : discard; break; // nothing visible, no update ",
   "}",
 ].join("\n");
 
-
 UniformsLib[ "vt/visible_tiles" ] = uniforms;
-ShaderChunk[ "vt/visible_tiles/pars_vertex" ] = pars_vertex;
-ShaderChunk[ "vt/visible_tiles/pars_fragment" ] = pars_fragment;
-ShaderChunk[ "vt/visible_tiles/fragment" ] = fragment;
-ShaderChunk[ "vt/visible_tiles/vertex" ] = vertex;
 
 export const VisibleTileShader =  {
   uniforms: uniforms,

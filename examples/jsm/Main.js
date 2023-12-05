@@ -56,7 +56,7 @@ export class APP {
       case "d": vt.cache.debug = !vt.cache.debug; vt.resetCache(); break;
       case "k": vt.resetCache(); break;
       case "t":
-        const textureModes = ["textureGrad", "textureLod"];
+        const textureModes = ["textureGrad", "textureLod", "texture", "textureCache", "texturePages"];
         vt.textureMode = (vt.textureMode +1) % textureModes.length;
         console.log(textureModes[vt.textureMode]);
         break;

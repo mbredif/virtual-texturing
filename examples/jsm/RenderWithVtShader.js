@@ -10,6 +10,7 @@ export const RenderWithVtShader = {
     "uniform bool bDebugLevel;",
     "uniform bool bDebugLastHits;",
     "uniform int iTextureMode;",
+
     "uniform VirtualTexture vt;",
 
     "float vt_lod(in vec2 gx, in vec2 gy, in vec2 size) {",
@@ -27,8 +28,11 @@ export const RenderWithVtShader = {
       "vec2 vt_size = exp2(vt.maxMipMapLevel) * vt.tileSize;",
       "vec4 page = vec4(0.);",
       "switch (iTextureMode) {",
-      "  case 0 : gl_FragColor = vt_textureGrad(vt, uv, gx, gy, page); break;",
-      "  case 1 : gl_FragColor = vt_textureLod(vt, uv, vt_lod(gx, gy, vt_size), page); break;",
+      "  case 0 : gl_FragColor = textureGrad(vt, uv, gx, gy, page); break;",
+      "  case 1 : gl_FragColor = textureLod(vt, uv, vt_lod(gx, gy, vt_size), page); break;",
+      "  case 2 : gl_FragColor = texture(vt, uv, page); break;",
+      "  case 3 : gl_FragColor = texture(vt.texture, uv); break;",
+      "  case 4 : gl_FragColor = vec4(texture(vt.cacheIndirection, uv).xyz,255)/255.; break;",
       "}",
       "if (bDebugLevel) gl_FragColor.r = page.z / vt.maxMipMapLevel;",
       "if (bDebugLastHits) gl_FragColor.g = 1. - (page.w / 255.);",
