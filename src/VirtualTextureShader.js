@@ -1,10 +1,6 @@
-import { UniformsLib, ShaderChunk } from '../examples/jsm/three.module.js';
+import { ShaderChunk } from '../examples/jsm/three.module.js';
 
-const uniforms = {
-  "vt" : { value: {} },
-};
-
-const pars_fragment = [
+ShaderChunk[ "vt/pars_fragment" ] = [
   "precision highp usampler2D;",
 
   "struct VirtualTexture {",
@@ -15,14 +11,14 @@ const pars_fragment = [
   " vec2 numPages;",
   " float minMipMapLevel;",
   " float maxMipMapLevel;",
-  " float maxAniso;",
+  " float anisotropy;",
   "};",
 
   "struct VirtualTextureTiles {",
   " vec2 tileSize;",
   " float minMipMapLevel;",
   " float maxMipMapLevel;",
-  " float maxAniso;",
+  " float anisotropy;",
   " float id;",
   "};",
 
@@ -66,7 +62,7 @@ const pars_fragment = [
     "vec2 dy = gy * vt.tileSize;",
     "float dx2 = dot(dx, dx);",
     "float dy2 = dot(dy, dy);",
-    "float minLod = vt.maxMipMapLevel + 0.5 * log2( max( min(dx2, dy2), max(dx2, dy2)/vt.maxAniso ));",
+    "float minLod = vt.maxMipMapLevel + 0.5 * log2( max( min(dx2, dy2), max(dx2, dy2)/vt.anisotropy ));",
 
   // indirection table lookup
     "vec4 page = vec4(textureLod( vt.cacheIndirection, uv, minLod - 0.5));",
@@ -142,7 +138,7 @@ const pars_fragment = [
     "vec2 dy = dFdy(coordPixels);",
     "float dx2 = dot(dx, dx);",
     "float dy2 = dot(dy, dy);",
-    "float mipLevel = vt.maxMipMapLevel + 0.5 * log2( max( min(dx2, dy2), max(dx2, dy2)/vt.maxAniso ));",
+    "float mipLevel = vt.maxMipMapLevel + 0.5 * log2( max( min(dx2, dy2), max(dx2, dy2)/vt.anisotropy ));",
     "float z = clamp(floor(mipLevel), vt.minMipMapLevel, vt.maxMipMapLevel);",
     "float size = floor(exp2(vt.maxMipMapLevel - z));",
     "vec2 xy = clamp(floor( uv * size ), 0., size-1.);",
@@ -162,14 +158,11 @@ const pars_fragment = [
     "vec2 xy = clamp(floor( uv * size ), 0., size-1.);",
     "return vec3(xy, z);",
   "}",
+  
+  "float vt_lod(in vec2 gx, in vec2 gy, in vec2 size) {",
+    "vec2 dx = gx * size;",
+    "vec2 dy = gy * size;",
+    "return 0.5 * log2( max(dot( dx, dx ), dot( dy, dy ) ) );",
+  "}",
 
 ].join("\n");
-
-
-UniformsLib[ "vt" ] = uniforms;
-ShaderChunk[ "vt/pars_fragment" ] = pars_fragment;
-
-export const VirtualTextureShader = {
-  uniforms: uniforms,
-  pars_fragment: pars_fragment
-};

@@ -7,8 +7,7 @@
  import { IndirectionTable } from './IndirectionTable.js';
  import { TileQueue } from './TileQueue.js';
  import { UsageTable } from './UsageTable.js';
- import { VirtualTextureShader } from './VirtualTextureShader.js';
- import { UniformsUtils, ShaderMaterial } from '../examples/jsm/three.module.js';
+ import './VirtualTextureShader.js';
 
 export class VirtualTexture {
   constructor( params ) {
@@ -23,6 +22,7 @@ export class VirtualTexture {
     this.tilePadding = params.tilePadding;
     this.pageCount = params.pageCount;
     this.useProgressiveLoading = true;
+    this.name = params.name || "vt";
 
     // init tile queue
     this.tileQueue = new TileQueue(10);
@@ -70,13 +70,6 @@ export class VirtualTexture {
     this.debugLastHits = false;
     this.textureMode = 0;
     this.init();
-    this.setSize(window.innerWidth, window.innerHeight);
-  }
-
-  setSize( width, height ) {
-
-    this.tileDetermination.setSize(width, height);
-
   }
 
   init() {
@@ -96,13 +89,22 @@ export class VirtualTexture {
 
   update (renderer, scene, camera) {
 
+    // update rendering uniforms
+    this.padding = [ this.cache.padding/this.cache.realTileSize.x , this.cache.padding/this.cache.realTileSize.y ];
+    this.texture = this.cache.texture;
+    this.cacheIndirection = this.indirectionTable.texture;
+    this.tileSize = [ this.cache.realTileSize.x , this.cache.realTileSize.y ];
+    this.numPages = [ this.cache.pageCount.x , this.cache.pageCount.y ];
+    this.anisotropy = this.texture.anisotropy;
+
+    // update rendering uniforms
     this.updateVisibleTileMaterial();
+
     this.tileDetermination.update( renderer, scene, camera );
     this.usageTable.update( this.tileDetermination.data );
     this.cache.update( renderer, this.usageTable );
     this.tileQueue.update( this.usageTable.table, this.cache);
     this.indirectionTable.update( this.cache, renderer.renderCount );
-
   }
 
   updateVisibleTileMaterial ( ) {
@@ -112,38 +114,8 @@ export class VirtualTexture {
     vt.tileSize =  [ this.cache.realTileSize.x * this.tileDetermination.ratio , this.cache.realTileSize.y* this.tileDetermination.ratio ];
     vt.minMipMapLevel = this.minMipMapLevel;
     vt.maxMipMapLevel = this.maxMipMapLevel;
-    vt.maxAniso = this.cache.texture.anisotropy;
+    vt.anisotropy = this.cache.texture.anisotropy;
     vt.id = 255;
-    uniforms.iTextureMode.value = this.textureMode;
-
-  }
-
-  createMaterial ( parameters, textureName ) {
-
-    const material = new ShaderMaterial( parameters );
-    const uniforms = VirtualTextureShader.uniforms;
-    material.uniforms = UniformsUtils.merge( [ uniforms, material.uniforms ] ),
-    material.virtualTextureName = textureName;
-    this.updateUniforms( material );
-    return material;
-
-  }
-
-  updateUniforms ( material ) {
-
-    const uniforms = material.uniforms;
-    const vt = uniforms[material.virtualTextureName].value;
-    vt.texture = this.cache.texture;
-    vt.cacheIndirection = this.indirectionTable.texture;
-    vt.padding = [ this.cache.padding/this.cache.realTileSize.x , this.cache.padding/this.cache.realTileSize.y ];
-    vt.tileSize = [ this.cache.realTileSize.x , this.cache.realTileSize.y ];
-    vt.numPages = [ this.cache.pageCount.x , this.cache.pageCount.y ];
-    vt.minMipMapLevel = this.minMipMapLevel;
-    vt.maxMipMapLevel = this.maxMipMapLevel;
-    vt.maxAniso = vt.texture.anisotropy;
-    uniforms.bDebugLevel.value = this.debugLevel;
-    uniforms.bDebugLastHits.value = this.debugLastHits;
-    uniforms.iTextureMode.value = this.textureMode;
 
   }
 };

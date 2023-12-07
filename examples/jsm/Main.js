@@ -9,6 +9,7 @@ import { IndirectionTableDebug } from '../../src/IndirectionTableDebug.js';
 import { CacheDebug } from '../../src/CacheDebug.js';
 import { Clock, WebGLRenderer, Scene, PerspectiveCamera, Mesh } from '../jsm/three.module.js';
 import { MapControls } from '../jsm/OrbitControls.js';
+import { ShaderMaterial } from '../jsm/three.module.js';
 import { WEBGL } from '../jsm/WebGL.js';
 
 function createStats() {
@@ -19,7 +20,6 @@ function createStats() {
   stats.domElement.style.left = '0';
   stats.domElement.style.top = '0';
 
-  document.body.appendChild( stats.domElement );
   return stats;
 }
 
@@ -32,17 +32,19 @@ export class APP {
     this.controls = null;
     this.clock = new Clock();
     this.stats = createStats();
+    document.body.appendChild( this.stats.domElement );
 
     this.virtualTexture = null;
-    console.log("h: toggle debug last hits")
-    console.log("l: toggle debug level")
-    console.log("e: toggle cache debuger visibility")
-    console.log("a: toggle indirection table debuger visibility")
-    console.log("z: toggle tile determination debuger visibility")
-    console.log("d: toggle debug tiles (resets cache)")
-    console.log("k: reset cache")
-    console.log("t: change virtual texture filtering mode")
-    console.log("i: show cache status")
+    this.textureModes = ["textureGrad", "textureLod", "texture", "textureCache", "texturePages"];
+    console.log("h: toggle debug last hits");
+    console.log("l: toggle debug level");
+    console.log("a: toggle tile determination debuger visibility");
+    console.log("z: toggle indirection table debuger visibility");
+    console.log("e: toggle cache debuger visibility");
+    console.log("d: toggle debug tiles (resets cache)");
+    console.log("k: reset cache");
+    for(const i in this.textureModes)
+      console.log(i+": change virtual texture filtering mode : "+this.textureModes[i]);
   }
 
   onKeyDown(event) {
@@ -50,20 +52,22 @@ export class APP {
     switch(event.key) {
       case "h": vt.debugLastHits = !vt.debugLastHits; break;
       case "l": vt.debugLevel = !vt.debugLevel; break;
+      case "a": this.tileDeterminationDebug.hidden = !this.tileDeterminationDebug.hidden; break;
+      case "z": this.indirectionTableDebug.hidden = !this.indirectionTableDebug.hidden; break;
       case "e": this.cacheDebug.hidden = !this.cacheDebug.hidden; break;
-      case "a": this.indirectionTableDebug.hidden = !this.indirectionTableDebug.hidden; break;
-      case "z": this.tileDeterminationDebug.hidden = !this.tileDeterminationDebug.hidden; break;
       case "d": vt.cache.debug = !vt.cache.debug; vt.resetCache(); break;
       case "k": vt.resetCache(); break;
-      case "t":
-        const textureModes = ["textureGrad", "textureLod", "texture", "textureCache", "texturePages"];
-        vt.textureMode = (vt.textureMode +1) % textureModes.length;
-        console.log(textureModes[vt.textureMode]);
+      case "0": case "1": case "2": case "3": case "4":
+        vt.textureMode = parseInt(event.key);
+        console.log(this.textureModes[vt.textureMode]);
         break;
-      case "i": console.log(vt.cache.getStatus()); break;
       default: return; break;
     }
-    vt.updateUniforms(this.material);
+    vt.tileDetermination.visibleTileMaterial.uniforms.iTextureMode.value = vt.textureMode;
+    const uniforms = this.material.uniforms;
+    uniforms.bDebugLevel.value = vt.debugLevel;
+    uniforms.bDebugLastHits.value = vt.debugLastHits;
+    uniforms.iTextureMode.value = vt.textureMode;
     event.preventDefault();
   }
 
@@ -73,7 +77,7 @@ export class APP {
     this.renderer.setSize(w, h);
     this.camera.aspect = w / h;
     this.camera.updateProjectionMatrix();
-    this.virtualTexture.setSize(w, h);
+    if (this.virtualTexture) this.virtualTexture.tileDetermination.setSize(w, h);
   }
 
   render() {
@@ -106,18 +110,14 @@ export class APP {
 
     }
 
-    var width = window.innerWidth;
-    var height = window.innerHeight;
-
     this.renderer = new WebGLRenderer();
     this.renderer.renderCount = 0;
-    this.renderer.setSize(width, height);
     this.renderer.extensions.get("OES_texture_float_linear");
     this.domContainer.appendChild(this.renderer.domElement);
 
     // create a scene
     this.scene = new Scene();
-    this.camera = new PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.01, 1000);
+    this.camera = new PerspectiveCamera(60, 1, 0.01, 1000);
     this.camera.position.set(0.0, 0.0, 80.0);
     this.scene.add(this.camera);
 
@@ -133,8 +133,9 @@ export class APP {
 
   load(geometry, config) {
 
+    this.material = new ShaderMaterial(RenderWithVtShader);
     this.virtualTexture = new VirtualTexture(config);
-    this.material = this.virtualTexture.createMaterial(RenderWithVtShader, 'vt');
+    this.material.uniforms.vt.value = this.virtualTexture;
     const mesh = new Mesh(geometry, this.material);
     this.scene.add(mesh);
 
@@ -142,5 +143,7 @@ export class APP {
     this.tileDeterminationDebug = new TileDeterminationDebug(this.virtualTexture, {hidden: true});
     this.indirectionTableDebug = new IndirectionTableDebug(this.virtualTexture, {hidden: true});
     this.cacheDebug = new CacheDebug(this.virtualTexture, {hidden: true});
+
+    this.resize();
   }
 };
