@@ -56,6 +56,7 @@ export class TileDeterminationDebug {
   update() {
     this.canvas.hidden = this.hidden;
     this.divTitle.hidden = this.hidden;
+    if(this.hidden) return;
     const tileDetermination = this.virtualTexture.tileDetermination;
     if (!tileDetermination.renderTarget) return;
     const width = tileDetermination.renderTarget.width;

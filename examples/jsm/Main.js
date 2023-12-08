@@ -7,7 +7,7 @@ import { VirtualTexture } from '../../src/VirtualTexture.js';
 import { TileDeterminationDebug } from '../../src/TileDeterminationDebug.js';
 import { IndirectionTableDebug } from '../../src/IndirectionTableDebug.js';
 import { CacheDebug } from '../../src/CacheDebug.js';
-import { Clock, WebGLRenderer, Scene, PerspectiveCamera, Mesh } from '../jsm/three.module.js';
+import { Clock, WebGLRenderer, Scene, PerspectiveCamera, Mesh, TextureLoader } from '../jsm/three.module.js';
 import { MapControls } from '../jsm/OrbitControls.js';
 import { ShaderMaterial } from '../jsm/three.module.js';
 import { WEBGL } from '../jsm/WebGL.js';
@@ -35,7 +35,6 @@ export class APP {
     document.body.appendChild( this.stats.domElement );
 
     this.virtualTexture = null;
-    this.textureModes = ["textureGrad", "textureLod", "texture", "textureCache", "texturePages"];
     console.log("h: toggle debug last hits");
     console.log("l: toggle debug level");
     console.log("a: toggle tile determination debuger visibility");
@@ -43,12 +42,16 @@ export class APP {
     console.log("e: toggle cache debuger visibility");
     console.log("d: toggle debug tiles (resets cache)");
     console.log("k: reset cache");
-    for(const i in this.textureModes)
-      console.log(i+": change virtual texture filtering mode : "+this.textureModes[i]);
+    console.log("/: textureGrad filtering");
+    console.log("*: textureLod  filtering");
+    console.log("-: texture     filtering");
+    console.log(".: switch to virtual texture");
+    console.log("[0-9]: switch to texture [#]");
   }
 
   onKeyDown(event) {
     const vt = this.virtualTexture;
+    const uniforms = this.material.uniforms;
     switch(event.key) {
       case "h": vt.debugLastHits = !vt.debugLastHits; break;
       case "l": vt.debugLevel = !vt.debugLevel; break;
@@ -57,14 +60,22 @@ export class APP {
       case "e": this.cacheDebug.hidden = !this.cacheDebug.hidden; break;
       case "d": vt.cache.debug = !vt.cache.debug; vt.resetCache(); break;
       case "k": vt.resetCache(); break;
-      case "0": case "1": case "2": case "3": case "4":
-        vt.textureMode = parseInt(event.key);
-        console.log(this.textureModes[vt.textureMode]);
-        break;
-      default: return; break;
+      case "/": vt.textureMode += 0 - (vt.textureMode % 3); console.log('textureGrad'); break;
+      case "*": vt.textureMode += 1 - (vt.textureMode % 3); console.log('textureLod'); break;
+      case "-": vt.textureMode += 2 - (vt.textureMode % 3); console.log('texture'); break;
+      case ".": vt.textureMode = vt.textureMode % 3; console.log('virtual texture'); break;
+      default :
+        const level = parseInt(event.key);
+        if(0 <= level && level < this.textures.length)
+        {
+          vt.textureMode = 3 + vt.textureMode % 3;
+          console.log(this.textures[level].name);
+          uniforms.tex.value = this.textures[level];
+          break;
+        }
+        return;
     }
     vt.tileDetermination.visibleTileMaterial.uniforms.iTextureMode.value = vt.textureMode;
-    const uniforms = this.material.uniforms;
     uniforms.bDebugLevel.value = vt.debugLevel;
     uniforms.bDebugLastHits.value = vt.debugLastHits;
     uniforms.iTextureMode.value = vt.textureMode;
@@ -136,8 +147,18 @@ export class APP {
     this.material = new ShaderMaterial(RenderWithVtShader);
     this.virtualTexture = new VirtualTexture(config);
     this.material.uniforms.vt.value = this.virtualTexture;
+    this.textures = [];
+    const loader = new TextureLoader();
+    for(let i in config.textures) {
+      const tex = loader.load(config.textures[i]);
+      tex.name = "texture level "+i;
+      tex.flipY = false;
+      this.textures.push(tex)
+    }
+    this.material.uniforms.tex.value = this.textures[4];
     const mesh = new Mesh(geometry, this.material);
     this.scene.add(mesh);
+
 
     // init debug helpers
     this.tileDeterminationDebug = new TileDeterminationDebug(this.virtualTexture, {hidden: true});

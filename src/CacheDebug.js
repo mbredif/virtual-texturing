@@ -55,6 +55,7 @@ export class CacheDebug {
   update() {
     this.canvas.hidden = this.hidden;
     this.divTitle.hidden = this.hidden;
+    if(this.hidden) return;
     const cache = this.virtualTexture.cache;
     const sx = this.canvas.width/cache.pageCount.x;
     const sy = this.canvas.height/cache.pageCount.y;

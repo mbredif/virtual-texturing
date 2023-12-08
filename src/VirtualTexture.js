@@ -26,7 +26,7 @@ export class VirtualTexture {
 
     // init tile queue
     this.tileQueue = new TileQueue(10);
-    this.tileQueue.getTilePath = params.getTilePath;
+    this.tileQueue.getTilePath = (tile) => params.getTilePath(tile);
 
     this.tileCount = 1 << this.maxMipMapLevel;
     this.size = [ this.tileSize[0] * this.tileCount, this.tileSize[1] * this.tileCount];

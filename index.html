@@ -24,6 +24,39 @@
 
       app.start();
 
+      class WMSSource {
+        constructor(config) {
+          Object.assign(this, config);
+          this.wms = this.wms + 'service=wms&version=1.3.0&request=getmap&layers={LAYER}&format=image/jpeg&crs={CRS}'
+          this.wms = this.wms.replace('{LAYER}', config.layer);
+          this.wms = this.wms.replace('{CRS}'  , config.crs  );
+          const padding = this.tilePadding;
+          const size = this.tileSize;
+          const width = size[0]+2*padding;
+          const height = size[1]+2*padding;
+          this.wmsTile = this.wms+'&width='+width+'&height='+height+'&BBOX=';
+          this.textures = [];
+          const bbox = this.bbox;
+          for(let i = 0; i < config.numTextures; ++i)
+            this.textures[i] = this.url(size[0]<<i, size[1]<<i, bbox[0], bbox[1], bbox[2], bbox[3]);
+        }
+        url(width, height, x0, y0, x1, y1) {
+          return this.wms+'&width='+width+'&height='+height+'&BBOX='+y0+','+x0+','+y1+','+x1;
+        }
+        getTilePath(tile) {
+          const bbox = this.bbox;
+          const padding = this.tilePadding;
+          const size = this.tileSize;
+          const w = (bbox[2]-bbox[0]) / (1 << tile.z);
+          const h = (bbox[3]-bbox[1]) / (1 << tile.z);
+          const x = bbox[0]+w*tile.x;
+          const y = bbox[3]-h*tile.y;
+          const a = w*padding/size[0];
+          const b = h*padding/size[1];
+          return { url: this.wmsTile+(y-h-b)+','+(x-a)+','+(y+b)+','+(x+w+a)};
+        }
+      }
+
       var config = [
         {
           maxMipMapLevel: 9,
@@ -166,7 +199,21 @@
               return scope;
             });
           },
-        }
+        },
+        new WMSSource({
+          maxMipMapLevel: 7,
+          minMipMapLevel: 0,
+          tileSize: [256,256],
+          tilePadding: 30,
+          tileClamp: 0.5,
+          pageCount: [16,16],
+          tileDeterminationRatio: 0.1,
+          numTextures: 5,
+          wms: 'https://www.gebco.net/data_and_products/gebco_web_services/web_map_service/mapserv?',
+          layer: 'gebco_latest',
+          crs: 'EPSG:4326',
+          bbox: [-10,40,15,55]
+        }),
       ];
 
       var geometry = new PlaneGeometry(100, 100, 100);

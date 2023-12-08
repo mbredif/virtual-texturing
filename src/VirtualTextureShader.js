@@ -163,14 +163,17 @@ ShaderChunk[ "vt/pars_fragment" ] = [
     "return vec3(xy, z);",
   "}",
 
-  "float vt_lod(in vec2 gx, in vec2 gy) { return 0.5 * log2( max(dot( gx, gx ), dot( gy, gy ) ) ); }",
-  "float vt_lod(in vec2 gx, in vec2 gy, in vec2 size, in float level) { return vt_lod(gx*size,gy*size) + level; }",
+  "float vt_lod(in vec2 size, in vec2 gx, in vec2 gy, in float bias) {",
+    "gx *= size;",
+    "gy *= size;",
+    "return 0.5 * log2( max(dot( gx, gx ), dot( gy, gy ) ) ) + bias;",
+  "}",
 
-  "float vt_lod(in VirtualTextureTiles t, in vec2 gx, in vec2 gy) { return vt_lod(gx, gy, t.tileSize, t.maxMipMapLevel); }",
-  "float vt_lod(in VirtualTexture      t, in vec2 gx, in vec2 gy) { return vt_lod(gx, gy, t.tileSize, t.maxMipMapLevel); }",
-  "float vt_lod(in sampler2D           t, in vec2 gx, in vec2 gy) { return vt_lod(gx, gy); }",
+  "float vt_lod(in VirtualTextureTiles t, in vec2 gx, in vec2 gy) { return vt_lod(t.tileSize, gx, gy, t.maxMipMapLevel); }",
+  "float vt_lod(in VirtualTexture      t, in vec2 gx, in vec2 gy) { return vt_lod(t.tileSize, gx, gy, t.maxMipMapLevel); }",
+  "float vt_lod(in sampler2D           t, in vec2 gx, in vec2 gy) { return vt_lod(vec2(textureSize(t,0)), gx, gy, 0.); }",
   "float vt_lod(in VirtualTextureTiles t, in vec2 uv) { return vt_lod(t, dFdx(uv), dFdy(uv)); }",
   "float vt_lod(in VirtualTexture      t, in vec2 uv) { return vt_lod(t, dFdx(uv), dFdy(uv)); }",
-  "float vt_lod(in sampler2D           t, in vec2 uv) { return vt_lod(dFdx(uv), dFdy(uv)); }",
+  "float vt_lod(in sampler2D           t, in vec2 uv) { return vt_lod(t, dFdx(uv), dFdy(uv)); }",
 
 ].join("\n");
