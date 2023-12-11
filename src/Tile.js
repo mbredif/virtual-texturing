@@ -10,8 +10,7 @@ export class Tile {
     this.x = TileId.getX(id);
     this.y = TileId.getY(id);
     this.z = TileId.getZ(id);
-    this.loaded = false;
-    this.image = undefined;
+    this.texture = undefined;
     this.forced = forced;
   }
 };

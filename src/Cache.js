@@ -35,7 +35,7 @@ function createTexture(image, x, y, z, l, lmax, x0, y0, pad, realTileSize, debug
 
 export class Cache {
 
-  constructor(tileSize, padding, pageCount, maxLevel) {
+  constructor(tileSize, padding, pageCount, maxLevel, format, type, internalFormat) {
     this.realTileSize = {
       x: tileSize[0] + (2 * padding),
       y: tileSize[1] + (2 * padding)
@@ -63,6 +63,10 @@ export class Cache {
       this.pages.push(new Page());
     }
 
+    this.format = format;
+    this.type = type;
+    //this.internalFormat = internalFormat;
+
     this.lastFrame = 0;
     this.debug = false;
     this.initTexture();
@@ -74,14 +78,18 @@ export class Cache {
       null,
       this.width,
       this.height,
-      RGBAFormat,
-      UnsignedByteType,
+      this.format,
+      this.type,
       UVMapping,
       ClampToEdgeWrapping,
       ClampToEdgeWrapping,
       LinearFilter,
       LinearMipMapLinearFilter
     );
+    //if (this.internalFormat)
+    //  this.texture.internalFormat = this.internalFormat;
+    //else
+    //  this.internalFormat = this.texture.internalFormat;
     this.texture.anisotropy = 4;
     this.texture.generateMipmaps = false;
     this.texture.needsUpdate = true;
@@ -90,9 +98,11 @@ export class Cache {
     let width = this.width;
     let height = this.height;
     //for (let l = 0; l <= this.maxTileLevels; ++l) {
+    console.log(this.texture.image);
     while ( width > 0 || height > 0 ) {
       this.texture.mipmaps.push({
         data: new Uint8Array(width * height * 4),
+        //data: new Float32Array(width * height),
         width: width || 1,
         height: height || 1
       });
@@ -197,7 +207,7 @@ export class Cache {
   }
 
   copyTextureToTexture(renderer, tile, x, y, level) {
-    const texture = createTexture(tile.image, tile.x, tile.y, tile.z, level, this.maxLevel, tile.x0, tile.y0, this.padding, this.realTileSize, this.debug);
+    const texture = createTexture(tile.texture.image, tile.x, tile.y, tile.z, level, this.maxLevel, tile.x0, tile.y0, this.padding, this.realTileSize, this.debug);
     const pos = new Vector2(x >> level, y >> level);
     renderer.copyTextureToTexture(pos, texture, this.texture, level);
   }
@@ -211,7 +221,7 @@ export class Cache {
       if(pageId == undefined) break; // all pages are already used for the current frame
       const page = this.pages[pageId];
       page.forced = tile.forced;
-      page.image = tile.image;
+      page.image = tile.texture.image;
       page.pending = true;
       pageIds.push(pageId);
       tileIds.push(tile.id);

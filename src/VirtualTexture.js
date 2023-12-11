@@ -8,6 +8,7 @@
  import { TileQueue } from './TileQueue.js';
  import { UsageTable } from './UsageTable.js';
  import './VirtualTextureShader.js';
+ import { UnsignedByteType, RGBAFormat } from '../examples/jsm/three.module.js';
 
 export class VirtualTexture {
   constructor( params ) {
@@ -16,17 +17,23 @@ export class VirtualTexture {
       return;
     }
 
+    const source = params.source;
+    const loader = params.loader;
+
     this.minMipMapLevel = params.minMipMapLevel;
     this.maxMipMapLevel = params.maxMipMapLevel;
-    this.tileSize = params.tileSize;
-    this.tilePadding = params.tilePadding;
+    this.tileSize = [ source.width, source.height ];
+    this.tilePadding = source.padding;
     this.pageCount = params.pageCount;
     this.useProgressiveLoading = true;
     this.name = params.name || "vt";
 
     // init tile queue
-    this.tileQueue = new TileQueue(10);
-    this.tileQueue.getTilePath = (tile) => params.getTilePath(tile);
+    this.tileQueue = new TileQueue(10, source, loader);
+
+    this.format = source.format || RGBAFormat;
+    this.type = source.type || UnsignedByteType;
+    this.internalFormat = source.internalFormat;
 
     this.tileCount = 1 << this.maxMipMapLevel;
     this.size = [ this.tileSize[0] * this.tileCount, this.tileSize[1] * this.tileCount];
@@ -46,8 +53,12 @@ export class VirtualTexture {
       this.tileSize,
       this.tilePadding,
       this.pageCount,
-      this.maxMipMapLevel
+      this.maxMipMapLevel,
+      this.format,
+      this.type,
+      this.internalFormat
     );
+    //this.internalFormat = this.cache.internalFormat;
 
     const scope = this;
     this.cache.pageDroppedCallback = function (tileId, PageId) {

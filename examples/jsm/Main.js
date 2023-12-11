@@ -46,7 +46,6 @@ export class APP {
     console.log("*: textureLod  filtering");
     console.log("-: texture     filtering");
     console.log(".: switch to virtual texture");
-    console.log("[0-9]: switch to texture [#]");
   }
 
   onKeyDown(event) {
@@ -65,14 +64,6 @@ export class APP {
       case "-": vt.textureMode += 2 - (vt.textureMode % 3); console.log('texture'); break;
       case ".": vt.textureMode = vt.textureMode % 3; console.log('virtual texture'); break;
       default :
-        const level = parseInt(event.key);
-        if(0 <= level && level < this.textures.length)
-        {
-          vt.textureMode = 3 + vt.textureMode % 3;
-          console.log(this.textures[level].name);
-          uniforms.tex.value = this.textures[level];
-          break;
-        }
         return;
     }
     vt.tileDetermination.visibleTileMaterial.uniforms.iTextureMode.value = vt.textureMode;
@@ -147,15 +138,6 @@ export class APP {
     this.material = new ShaderMaterial(RenderWithVtShader);
     this.virtualTexture = new VirtualTexture(config);
     this.material.uniforms.vt.value = this.virtualTexture;
-    this.textures = [];
-    const loader = new TextureLoader();
-    for(let i in config.textures) {
-      const tex = loader.load(config.textures[i]);
-      tex.name = "texture level "+i;
-      tex.flipY = false;
-      this.textures.push(tex)
-    }
-    this.material.uniforms.tex.value = this.textures[4];
     const mesh = new Mesh(geometry, this.material);
     this.scene.add(mesh);
 
