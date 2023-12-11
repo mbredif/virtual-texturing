@@ -32,7 +32,6 @@ export class APP {
     this.controls = null;
     this.clock = new Clock();
     this.stats = createStats();
-    document.body.appendChild( this.stats.domElement );
 
     this.virtualTexture = null;
     console.log("h: toggle debug last hits");
@@ -45,7 +44,6 @@ export class APP {
     console.log("/: textureGrad filtering");
     console.log("*: textureLod  filtering");
     console.log("-: texture     filtering");
-    console.log(".: switch to virtual texture");
   }
 
   onKeyDown(event) {
@@ -59,10 +57,9 @@ export class APP {
       case "e": this.cacheDebug.hidden = !this.cacheDebug.hidden; break;
       case "d": vt.cache.debug = !vt.cache.debug; vt.resetCache(); break;
       case "k": vt.resetCache(); break;
-      case "/": vt.textureMode += 0 - (vt.textureMode % 3); console.log('textureGrad'); break;
-      case "*": vt.textureMode += 1 - (vt.textureMode % 3); console.log('textureLod'); break;
-      case "-": vt.textureMode += 2 - (vt.textureMode % 3); console.log('texture'); break;
-      case ".": vt.textureMode = vt.textureMode % 3; console.log('virtual texture'); break;
+      case "/": vt.textureMode = 0; console.log('textureGrad'); break;
+      case "*": vt.textureMode = 1; console.log('textureLod'); break;
+      case "-": vt.textureMode = 2; console.log('texture'); break;
       default :
         return;
     }

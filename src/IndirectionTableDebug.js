@@ -6,7 +6,7 @@ export class IndirectionTableDebug {
   constructor(virtualTexture, params) {
     this.virtualTexture = virtualTexture;
     this.hidden = params.hidden || false;
-    this.canvas = [];
+    this.canvas = {};
     this.imageData = [];
     const minLevel = this.virtualTexture.indirectionTable.minLevel;
     const maxLevel = this.virtualTexture.indirectionTable.maxLevel;
@@ -40,7 +40,7 @@ export class IndirectionTableDebug {
 
     for( let l = minLevel; l <= maxLevel; ++l) {
       const canvas = document.createElement('canvas');
-      this.canvas.push(canvas);
+      this.canvas[l] = canvas;
       canvas.width = 1 << l;
       canvas.height = 1 << l;
       this.imageData[l] = canvas.getContext('2d').createImageData(canvas.width, canvas.height);

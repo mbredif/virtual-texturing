@@ -89,6 +89,11 @@
           + '&TileMatrix=';
         }
         getUrl(tile) {
+          if (this.tileMatrixSetLimits) {
+            const limits = this.tileMatrixSetLimits[tile.z];
+            if(!limits || tile.x < limits.minTileCol || tile.x > limits.maxTileCol || tile.y < limits.minTileRow || tile.y > limits.maxTileRow)
+              return undefined;
+          }
           return this.base+tile.z+'&TileRow='+tile.y+'&TileCol='+tile.x;
         }
       }
@@ -206,10 +211,59 @@
             height: 256,
             padding: 0,
             minMipMapLevel: 0,
-            maxMipMapLevel: 2,
+            maxMipMapLevel: 7,
             format: RedFormat,
             type: FloatType,
-            internalFormat : "R32F",
+            tileMatrixSetLimits: {
+                "3": {
+                    "minTileRow": 1,
+                    "maxTileRow": 6,
+                    "minTileCol": 0,
+                    "maxTileCol": 16
+                },
+                "4": {
+                    "minTileRow": 2,
+                    "maxTileRow": 12,
+                    "minTileCol": 0,
+                    "maxTileCol": 32
+                },
+                "5": {
+                    "minTileRow": 5,
+                    "maxTileRow": 25,
+                    "minTileCol": 0,
+                    "maxTileCol": 64
+                },
+                "6": {
+                    "minTileRow": 10,
+                    "maxTileRow": 51,
+                    "minTileCol": 0,
+                    "maxTileCol": 128
+                },
+                "7": {
+                    "minTileRow": 20,
+                    "maxTileRow": 103,
+                    "minTileCol": 0,
+                    "maxTileCol": 256
+                },
+                "8": {
+                    "minTileRow": 41,
+                    "maxTileRow": 207,
+                    "minTileCol": 0,
+                    "maxTileCol": 512
+                },
+                "9": {
+                    "minTileRow": 82,
+                    "maxTileRow": 415,
+                    "minTileCol": 0,
+                    "maxTileCol": 1024
+                },
+                "10": {
+                    "minTileRow": 164,
+                    "maxTileRow": 830,
+                    "minTileCol": 0,
+                    "maxTileCol": 2048
+                }
+            }
           }),
           loader: new XBILLoader()
         }
