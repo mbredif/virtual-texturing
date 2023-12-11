@@ -20,8 +20,8 @@ export class VirtualTexture {
     const source = params.source;
     const loader = params.loader;
 
-    this.minMipMapLevel = params.minMipMapLevel;
-    this.maxMipMapLevel = params.maxMipMapLevel;
+    this.minMipMapLevel = source.minMipMapLevel;
+    this.maxMipMapLevel = source.maxMipMapLevel;
     this.tileSize = [ source.width, source.height ];
     this.tilePadding = source.padding;
     this.pageCount = params.pageCount;

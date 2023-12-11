@@ -1,12 +1,32 @@
 import { Page } from './Page.js';
 import { TileId } from './TileId.js';
 import { Tile } from './Tile.js';
-import { DataTexture, CanvasTexture, RGBAFormat, UnsignedByteType, UVMapping, ClampToEdgeWrapping, LinearMipMapLinearFilter, LinearFilter, Vector2 }
-from '../examples/jsm/three.module.js';
+import { DataTexture, CanvasTexture, UVMapping, ClampToEdgeWrapping, LinearMipMapLinearFilter, LinearFilter, Vector2 } from '../examples/jsm/three.module.js';
+import { RGBAFormat, RGBAIntegerFormat, RGFormat, RGIntegerFormat, RedFormat, RedIntegerFormat } from '../examples/jsm/three.module.js';
+import { ByteType, ShortType, IntType, UnsignedByteType, UnsignedShortType, UnsignedIntType, FloatType } from '../examples/jsm/three.module.js';
 
-export const StatusNotAvailable = 0;
-export const StatusAvailable = 1;
-export const StatusPendingDelete = 2;
+function getChannelCount( format ) {
+	switch ( format ) {
+		case RGBAFormat: case RGBAIntegerFormat: return 4;
+		case RGFormat  : case RGIntegerFormat  : return 2;
+		case RedFormat : case RedIntegerFormat : return 1;
+		default : throw new Error( "unsupported format in VirtualTexture" );
+  }
+}
+
+function getTypedArray( type ) {
+	switch ( type ) {
+		case ByteType         : return Int8Array;
+		case ShortType        : return Int16Array;
+    case IntType          : return Int32Array;
+    case UnsignedByteType : return Uint8Array;
+		case UnsignedShortType: return Uint16Array;
+		case UnsignedIntType  : return Uint32Array;
+    case FloatType        : return Float32Array;
+		default : throw new Error( "unsupported type in VirtualTexture" );
+  }
+}
+
 
 function createTexture(image, x, y, z, l, lmax, x0, y0, pad, realTileSize, debug) {
   const canvas = document.createElement( "canvas" );
@@ -98,11 +118,12 @@ export class Cache {
     let width = this.width;
     let height = this.height;
     //for (let l = 0; l <= this.maxTileLevels; ++l) {
-    console.log(this.texture.image);
+    const channels = getChannelCount(this.format);
+    const typedArray = getTypedArray(this.type);
+
     while ( width > 0 || height > 0 ) {
       this.texture.mipmaps.push({
-        data: new Uint8Array(width * height * 4),
-        //data: new Float32Array(width * height),
+        data: new typedArray(width * height * channels),
         width: width || 1,
         height: height || 1
       });

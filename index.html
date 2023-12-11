@@ -112,6 +112,7 @@
           .then((info) => {
             scope.size = info['Max-size'];
             const size = info['Tile-size'];
+            scope.minMipMapLevel = 0;
             scope.maxMipMapLevel = info['Resolution-number']-1;
             scope.width = size[0];
             scope.height = size[1];
@@ -135,30 +136,26 @@
 
       var config = [
         {
-          maxMipMapLevel: 9,
-          minMipMapLevel: 0,
           tileClamp: 0.5,
           pageCount: [16,16],
           tileDeterminationRatio: 0.25,
           source: new WMTSSource({
             version: '1.0.0',
             tileMatrixSet: 'PM',
-            style: 'normal',
-            mimeType: 'image/jpeg',
             wmts: 'https://wxs.ign.fr/decouverte/geoportail/wmts',
             layer: 'ORTHOIMAGERY.ORTHOPHOTOS',
             width: 256,
             height: 256,
             padding: 0,
+            minMipMapLevel: 0,
+            maxMipMapLevel: 9,
           })
         },
         {
-          minMipMapLevel: 0,
           tileClamp: 0.5,
           pageCount: [32,32],
           tileDeterminationRatio: 0.125,
           source: {
-            maxMipMapLevel: 4,
             getUrl(tile) {
               const pageNumber = tile.x + tile.y * ( 1 << tile.z );
               return '/examples/models/terrain/tiles/diffuse/' + tile.z + '-' + pageNumber + ".jpg";
@@ -166,23 +163,21 @@
             width: 128,
             height: 128,
             padding: 4,
+            minMipMapLevel: 0,
+            maxMipMapLevel: 4,
           }
         },
         {
-          minMipMapLevel: 0,
-            maxMipMapLevel: 6,
           tileClamp: 0.5,
           pageCount: [16,16],
           tileDeterminationRatio: 0.125,
           source: new IIPSource({
             iip: 'https://wxs.ign.fr/x7yv499pbcguxhhxh8syehwe/iipsrv.fcgi',
             id: 'DEMAT.PVA/0317-0101/IGNF_PVA_1-0__1944__C0317-0101_1944_106G2481_4026.jp2',
-            padding: 0
+            padding: 0,
           }),
         },
         {
-          maxMipMapLevel: 7,
-          minMipMapLevel: 0,
           tileClamp: 0.5,
           pageCount: [16,16],
           tileDeterminationRatio: 0.1,
@@ -191,30 +186,30 @@
             layer: 'gebco_latest',
             crs: 'EPSG:4326',
             bbox: [-10,40,15,55],
-            width:256,
-            height:256,
-            padding:30,
-            numTextures: 5
+            width: 256,
+            height: 256,
+            padding: 10,
+            minMipMapLevel: 0,
+            maxMipMapLevel: 7,
           })
         },
         {
-          maxMipMapLevel: 2,
-          minMipMapLevel: 0,
           tileClamp: 0.5,
           pageCount: [16,16],
           tileDeterminationRatio: 0.1,
           source: new WMTSSource({
-            url: 'https://wxs.ign.fr/altimetrie/geoportail/wmts',
+            wmts: 'https://wxs.ign.fr/altimetrie/geoportail/wmts',
             layer: 'ELEVATION.ELEVATIONGRIDCOVERAGE.SRTM3',
-            style: 'normal',
             tileMatrixSet: 'WGS84G',
             mimeType: 'image/x-bil;bits=32',
             width: 256,
             height: 256,
+            padding: 0,
+            minMipMapLevel: 0,
+            maxMipMapLevel: 2,
             format: RedFormat,
             type: FloatType,
             internalFormat : "R32F",
-            padding: 0
           }),
           loader: new XBILLoader()
         }
