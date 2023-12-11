@@ -3,6 +3,27 @@
 //
 import { TileId } from './TileId.js';
 import { Tile } from './Tile.js';
+import { TextureLoader } from '../examples/jsm/three.module.js';
+
+import { FloatType, RedFormat, DataTextureLoader } from '../examples/jsm/three.module.js';
+class XBILLoader extends DataTextureLoader {
+	constructor( manager, width, height, format, type, internalFormat ) {
+		super( manager );
+		//this.format = format || RedFormat;
+		this.type = type || FloatType;
+		//this.internalFormat = internalFormat || "R32F";
+	}
+
+  parse( buffer ) {
+    var enc = new TextDecoder("utf-8");
+    if (buffer.length % 4 != 0) console.log(enc.decode(buffer));
+		return {
+      data: new Float32Array(buffer),
+			width: this.width, height: this.height,
+			type: this.type
+		};
+  }
+}
 
 export class TileQueue {
   constructor(maxLoading) {
@@ -13,6 +34,9 @@ export class TileQueue {
     this.tiles = [];
     this.sorted = false;
     this.pending = {};
+
+    this.textureLoader = new XBILLoader();
+    this.textureLoader.crossOrigin = 'Anonymous';
   }
 
   push(tile) {
@@ -30,16 +54,14 @@ export class TileQueue {
       const filePath = this.getTilePath(tile);
       if (!filePath) return scope.process();
 
-      const image = new Image();
-      image.crossOrigin = 'Anonymous';
 
       this.onLoading++;
 
-      image.onload = function() {
+      function onLoad(texture) {
         --scope.onLoading;
         ++scope.loadCount;
 
-        tile.image = this;
+        tile.image = texture.image;
         tile.loaded = true;
         tile.x0 = filePath.x0 || 0;
         tile.y0 = filePath.y0 || 0;
@@ -48,8 +70,10 @@ export class TileQueue {
         scope.process();
         if (scope.callback) scope.callback(tile);
       };
-      image.src = filePath.url;
 
+      function onProgress(event) {console.warn(arguments);}
+      function onError() {console.err(arguments);}
+      this.textureLoader.load(filePath.url, onLoad, onProgress, onError);
     }
   }
 
