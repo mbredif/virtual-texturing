@@ -68,7 +68,7 @@ export class VirtualTexture {
     // init usage table
     this.usageTable = new UsageTable(this.maxMipMapLevel);
 
-    this.tileQueue.callback = function (tile) {
+    this.tileQueue.onLoad = function (tile) {
       scope.cache.cacheTile(tile);
     };
 

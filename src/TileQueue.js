@@ -10,7 +10,9 @@ export class TileQueue {
     this.maxLoading = maxLoading;
     this.onLoading = 0;
     this.loadCount = 0;
-    this.callback = null;
+    this.onLoad = null;
+    this.onProgress = null;
+    this.onError = null;
     this.tiles = [];
     this.sorted = false;
     this.pending = {};
@@ -47,14 +49,11 @@ export class TileQueue {
 
         delete scope.pending[tile.id];
         scope.process();
-        if (scope.callback) scope.callback(tile);
+        if (scope.onLoad) scope.onLoad(tile);
       };
 
-      function onProgress(event) {console.warn(event);}
-      function onError(event) {console.error(event);}
-
       this.onLoading++;
-      this.loader.load(url, onLoad, onProgress, onError, this.source);
+      this.loader.load(url, onLoad, scope.onProgress, scope.onError, this.source);
     }
   }
 

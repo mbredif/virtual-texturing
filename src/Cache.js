@@ -27,8 +27,34 @@ function getTypedArray( type ) {
   }
 }
 
+function createDataTexture(image, x, y, z, l, lmax, x0, y0, pad, realTileSize, debug) {
+  const tile  = 1 << l;
+  const width = image.width >> l || 1;
+  const height = image.height >> l || 1;
+  const channels = image.data.length / (image.width * image.height);
+  const data = new image.data.constructor(width * height * channels);
+  for(let j=0; j<width; ++j) {
+    for(let i=0; i<height; ++i) {
+      for(let c=0; c<channels; ++c) {
+        let s = 0;
+        let n = 0;
+        for(let l=j*tile; l<j*tile+tile && l < image.height; ++l) {
+          for(let k=i*tile; k<i*tile+tile && k < image.width; ++k) {
+            const v = image.data[(l*image.width+k)*channels+c];
+            if (v === -9999) v = 0;
+            s += v;
+            n += 1;
+          }
+        }
+        data[(j*width+i)*channels+c] = n>0 ? s / (1000*n) : 0;
+      }
+    }
+  }
+  return new DataTexture(data, width, height);
+}
 
 function createTexture(image, x, y, z, l, lmax, x0, y0, pad, realTileSize, debug) {
+  if (image.data) return createDataTexture(image, x, y, z, l, lmax, x0, y0, pad, realTileSize, debug);
   const canvas = document.createElement( "canvas" );
   const context = canvas.getContext( "2d" );
   context.imageSmoothingEnabled = true;
