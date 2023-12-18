@@ -3,6 +3,7 @@
 //
 import { TileId } from './TileId.js';
 import { Tile } from './Tile.js';
+import { XBILLoader } from './XBILLoader.js';
 import { TextureLoader } from '../examples/jsm/three.module.js';
 
 export class TileQueue {
@@ -16,9 +17,9 @@ export class TileQueue {
     this.tiles = [];
     this.sorted = false;
     this.pending = {};
+    this.loader = loader || (source.mimeType == 'image/x-bil;bits=32' ? new XBILLoader(): new TextureLoader());
 
     this.source = source;
-    this.loader = loader || new TextureLoader();
     this.loader.crossOrigin = crossOrigin || 'Anonymous';
   }
 

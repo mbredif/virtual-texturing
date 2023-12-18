@@ -17,12 +17,14 @@ export const VisibleTileShader =  {
     "uniform int iTextureMode;",
     "varying vec2 vUv;",
     "void main() {",
-    " switch (iTextureMode) {",
-    "  case 0 : gl_FragColor = vec4(vt_textureTileGrad(vt, vUv), vt.id)/255.; break;",
-    "  case 1 : gl_FragColor = vec4(vt_textureTileLod(vt, vUv), vt.id)/255.; break;",
-    "  case 2 : gl_FragColor = vec4(vt_textureTile(vt, vUv), vt.id)/255.; break;",
-    "  default : discard; break; // nothing visible, no update ",
-    " }",
+      "vec2 uv = vUv;",
+      "vec4 page = vec4(0.);",
+      "switch (iTextureMode) {",
+      "  case 0 : gl_FragColor = vec4(floor(vt_textureTileGrad(vt, uv, dFdx(uv), dFdy(uv))), vt.id)/255.; break;",
+      "  case 1 : gl_FragColor = vec4(floor(vt_textureTileLod(vt, uv, vt_lod(vt, dFdx(uv), dFdy(uv)))), vt.id)/255.; break;",
+      "  case 2 : gl_FragColor = vec4(floor(vt_textureTile(vt, uv)), vt.id)/255.; break;",
+      "  default : discard; break; // nothing visible, no update ",
+      "}",
     "}"
   ].join("\n")
 };

@@ -22,14 +22,10 @@ ShaderChunk[ "vt/pars_fragment" ] = [
   " float id;",
   "};",
 
-  "highp ivec2 textureSize(in VirtualTexture vt, in int lod) {",
-    "return textureSize(vt.cacheIndirection, lod) * ivec2(vt.tileSize);",
-  "}",
-
   "vec4 vt_textureCoords(in VirtualTexture vt, inout vec2 uv) {",
     // indirection table lookup
     "float bias = log2(min(vt.tileSize.x, vt.tileSize.y)) - 0.5;",
-    "vec4 page = vec4(texture( vt.cacheIndirection, uv, bias ));",
+    "vec4 page = vec4(texture( vt.cacheIndirection, uv, bias ));", // Fragment shader only
     "float l = exp2(page.z);",
     "vec2 inPageUv = fract(uv * l);",
     "vec2 paddingScale = 1.-2.*vt.padding;",
@@ -42,14 +38,16 @@ ShaderChunk[ "vt/pars_fragment" ] = [
 
   "vec4 vt_textureCoordsLod(in VirtualTexture vt, inout vec2 uv, inout float lod) {",
   // indirection table lookup
-    "vec4 page = vec4(textureLod( vt.cacheIndirection, uv, lod - 0.5 ));",
+    "float z = clamp(floor(lod),0.,vt.maxMipMapLevel-vt.minMipMapLevel);",
+    "vec4 page = vec4(texelFetch( vt.cacheIndirection, ivec2(floor(uv*exp2(vt.maxMipMapLevel-z))), int(z)));",
     "float l = exp2(page.z);",
     "vec2 inPageUv = fract(uv * l);",
     "vec2 paddingScale = 1.-2.*vt.padding;",
     "inPageUv = vt.padding + inPageUv * paddingScale;",
 
     // compute lod and move inPageUv so that footprint stays in tile
-    "lod = clamp(lod - (vt.maxMipMapLevel - page.z), vt.minMipMapLevel, vt.maxMipMapLevel);",
+    "lod = clamp(lod-vt.maxMipMapLevel+page.z,0.,1.);",
+
     "vec4 clamping;",
     "clamping.xy = min(vec2(0.5), exp2(lod)/vt.tileSize);",
     "clamping.zw = 1.-clamping.xy;",
@@ -60,27 +58,25 @@ ShaderChunk[ "vt/pars_fragment" ] = [
     "return page;",
   "}",
 
+
   "vec4 vt_textureCoordsGrad(in VirtualTexture vt, inout vec2 uv, inout vec2 gx, inout vec2 gy) {",
 
     "vec2 dx = gx * vt.tileSize;",
     "vec2 dy = gy * vt.tileSize;",
     "float dx2 = dot(dx, dx);",
     "float dy2 = dot(dy, dy);",
-    "float minLod = vt.maxMipMapLevel + 0.5 * log2( max( min(dx2, dy2), max(dx2, dy2)/vt.anisotropy ));",
+    "float minlod = vt.maxMipMapLevel + 0.5 * log2( max( min(dx2, dy2), max(dx2, dy2)/vt.anisotropy ));",
 
   // indirection table lookup
-    "vec4 page = vec4(textureLod( vt.cacheIndirection, uv, minLod - 0.5));",
+    "float z = clamp(floor(minlod),0.,vt.maxMipMapLevel-vt.minMipMapLevel);",
+    "vec4 page = vec4(texelFetch( vt.cacheIndirection, ivec2(floor(uv*exp2(vt.maxMipMapLevel-z))), int(z)));",
     "float l = exp2(page.z);",
     "vec2 inPageUv = fract(uv * l);",
     "vec2 paddingScale = 1.-2.*vt.padding;",
     "inPageUv = vt.padding + inPageUv * paddingScale;",
 
     // compute lod
-    "vec2 scale = l * paddingScale;",
-    "gx *= scale;",
-    "gy *= scale;",
-    "float d = max(dot( gx, gx ), dot( gy, gy ) );",
-    "float lod = clamp(0.5 * log2( d ) - vt.maxMipMapLevel, vt.minMipMapLevel, vt.maxMipMapLevel);",
+    "float lod = clamp(minlod-vt.maxMipMapLevel+page.z,0.,1.);",
 
     // clamp inPageUv
     "vec4 clamping;",
@@ -89,8 +85,8 @@ ShaderChunk[ "vt/pars_fragment" ] = [
     "inPageUv = clamp(inPageUv, clamping.xy, clamping.zw);",
 
     // compute gradients
-    "gx /= vt.numPages;",
-    "gy /= vt.numPages;",
+    "gx *= l/vt.numPages;",
+    "gy *= l/vt.numPages;",
 
     // clamp gradients
     "vec4 gminmax = clamping - inPageUv.xyxy;",
@@ -126,54 +122,49 @@ ShaderChunk[ "vt/pars_fragment" ] = [
   "vec4 textureLod(in VirtualTexture vt, in vec2 uv, in float lod) { vec4 page; return textureLod(vt, uv, lod, page); }",
   "vec4 textureGrad(in VirtualTexture vt, in vec2 uv, in vec2 gx, in vec2 gy) { vec4 page; return textureGrad(vt, uv, gx, gy, page); }",
 
-  "vec3 vt_textureTile(in VirtualTextureTiles vt, in vec2 uv)",
+  "highp ivec2 textureSize(in VirtualTexture vt, in int lod) { return textureSize(vt.cacheIndirection, lod) * ivec2(vt.tileSize); }",
+  "float vt_lod(in vec2 gx, in vec2 gy) { return 0.5 * log2( max(dot( gx, gx ), dot( gy, gy ) ) ); }",
+  "float vt_lod(in vec2 gx, in vec2 gy, in vec2 size) { return vt_lod(gx * size, gy * size); }",
+  "float vt_lod(in VirtualTextureTiles t, in vec2 gx, in vec2 gy) { return vt_lod(gx, gy, t.tileSize) + t.maxMipMapLevel; }",
+  "float vt_lod(in VirtualTexture      t, in vec2 gx, in vec2 gy) { return vt_lod(gx, gy, t.tileSize) + t.maxMipMapLevel; }",
+  "float vt_lod(in sampler2D           t, in vec2 gx, in vec2 gy) { return vt_lod(gx, gy, vec2(textureSize(t,0))); }",
+  "float vt_lod(in VirtualTextureTiles t, in vec2 uv) { uv *= t.tileSize; return vt_lod(dFdx(uv), dFdy(uv)) + t.maxMipMapLevel; }",
+  "float vt_lod(in VirtualTexture      t, in vec2 uv) { uv *= t.tileSize; return vt_lod(dFdx(uv), dFdy(uv)) + t.maxMipMapLevel; }",
+  "float vt_lod(in sampler2D           t, in vec2 uv) { uv *= vec2(textureSize(t,0)); return vt_lod(dFdx(uv), dFdy(uv)); }",
+
+  "vec3 vt_textureTileLod(in VirtualTexture vt, in vec2 uv, in float lod)",
   "{",
-    "float bias = log2(min(vt.tileSize.x, vt.tileSize.y)) - 0.5;",
-    "float z = clamp(floor(bias), vt.minMipMapLevel, vt.maxMipMapLevel);",
-    "float size = floor(exp2(vt.maxMipMapLevel - z));",
-    "vec2 xy = clamp(floor( uv * size ), 0., size-1.);",
-    "return vec3(xy, z);",
+    "lod = clamp(lod, 0., vt.maxMipMapLevel-vt.minMipMapLevel);",
+    "return vec3(uv * exp2(vt.maxMipMapLevel - floor(lod)), lod);",
   "}",
 
-  "vec3 vt_textureTileGrad(in VirtualTextureTiles vt, in vec2 uv)",
+  "vec3 vt_textureTileLod(in VirtualTextureTiles vt, in vec2 uv, in float lod)",
   "{",
-    "vec2 coordPixels = uv * vt.tileSize;",
-    "vec2 dx = dFdx(coordPixels);",
-    "vec2 dy = dFdy(coordPixels);",
-    "float dx2 = dot(dx, dx);",
-    "float dy2 = dot(dy, dy);",
-    "float mipLevel = vt.maxMipMapLevel + 0.5 * log2( max( min(dx2, dy2), max(dx2, dy2)/vt.anisotropy ));",
-    "float z = clamp(floor(mipLevel), vt.minMipMapLevel, vt.maxMipMapLevel);",
-    "float size = floor(exp2(vt.maxMipMapLevel - z));",
-    "vec2 xy = clamp(floor( uv * size ), 0., size-1.);",
-    "return vec3(xy, z);",
+    "lod = clamp(lod, 0., vt.maxMipMapLevel-vt.minMipMapLevel);",
+    "return vec3(uv * exp2(vt.maxMipMapLevel - floor(lod)), lod);",
   "}",
 
-  "vec3 vt_textureTileLod(in VirtualTextureTiles vt, in vec2 uv)",
+  "vec3 vt_textureTile(in VirtualTextureTiles vt, in vec2 uv) { return vt_textureTileLod(vt, uv, vt_lod(vt, uv)); }",
+  "vec3 vt_textureTile(in VirtualTexture      vt, in vec2 uv) { return vt_textureTileLod(vt, uv, vt_lod(vt, uv)); }",
+
+  "vec3 vt_textureTileGrad(in VirtualTextureTiles vt, in vec2 uv, in vec2 gx, in vec2 gy)",
   "{",
-    "vec2 coordPixels = uv * vt.tileSize;",
-    "vec2 dx = dFdx(coordPixels);",
-    "vec2 dy = dFdy(coordPixels);",
-    "float dx2 = dot(dx, dx);",
-    "float dy2 = dot(dy, dy);",
-    "float mipLevel = vt.maxMipMapLevel + 0.5 * log2(max(dx2, dy2));",
-    "float z = clamp(floor(mipLevel), vt.minMipMapLevel, vt.maxMipMapLevel);",
-    "float size = floor(exp2(vt.maxMipMapLevel - z));",
-    "vec2 xy = clamp(floor( uv * size ), 0., size-1.);",
-    "return vec3(xy, z);",
+    "gx *= vt.tileSize;",
+    "gy *= vt.tileSize;",
+    "float dx2 = dot(gx,gx);",
+    "float dy2 = dot(gy,gy);",
+    "float lod = vt.maxMipMapLevel + 0.5 * log2( max( min(dx2, dy2), max(dx2, dy2)/vt.anisotropy ));",
+    "return vt_textureTileLod(vt, uv, lod);",
+  "}",
+  "vec3 vt_textureTileGrad(in VirtualTexture vt, in vec2 uv, in vec2 gx, in vec2 gy)",
+  "{",
+    "gx *= vt.tileSize;",
+    "gy *= vt.tileSize;",
+    "float dx2 = dot(gx,gx);",
+    "float dy2 = dot(gy,gy);",
+    "float lod = vt.maxMipMapLevel + 0.5 * log2( max( min(dx2, dy2), max(dx2, dy2)/vt.anisotropy ));",
+    "return vt_textureTileLod(vt, uv, lod);",
   "}",
 
-  "float vt_lod(in vec2 size, in vec2 gx, in vec2 gy, in float bias) {",
-    "gx *= size;",
-    "gy *= size;",
-    "return 0.5 * log2( max(dot( gx, gx ), dot( gy, gy ) ) ) + bias;",
-  "}",
-
-  "float vt_lod(in VirtualTextureTiles t, in vec2 gx, in vec2 gy) { return vt_lod(t.tileSize, gx, gy, t.maxMipMapLevel); }",
-  "float vt_lod(in VirtualTexture      t, in vec2 gx, in vec2 gy) { return vt_lod(t.tileSize, gx, gy, t.maxMipMapLevel); }",
-  "float vt_lod(in sampler2D           t, in vec2 gx, in vec2 gy) { return vt_lod(vec2(textureSize(t,0)), gx, gy, 0.); }",
-  "float vt_lod(in VirtualTextureTiles t, in vec2 uv) { return vt_lod(t, dFdx(uv), dFdy(uv)); }",
-  "float vt_lod(in VirtualTexture      t, in vec2 uv) { return vt_lod(t, dFdx(uv), dFdy(uv)); }",
-  "float vt_lod(in sampler2D           t, in vec2 uv) { return vt_lod(t, dFdx(uv), dFdy(uv)); }",
 
 ].join("\n");
