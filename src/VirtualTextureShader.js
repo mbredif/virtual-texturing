@@ -22,7 +22,7 @@ ShaderChunk[ "vt/pars_fragment" ] = [
   " float id;",
   "};",
 
-  "vec4 vt_textureCoords(in VirtualTexture vt, inout vec2 uv) {",
+  "vec2 vt_textureCoords(in VirtualTexture vt, in vec2 uv) {",
     // indirection table lookup
     "float bias = log2(min(vt.tileSize.x, vt.tileSize.y)) - 0.5;",
     "vec4 page = vec4(texture( vt.cacheIndirection, uv, bias ));", // Fragment shader only
@@ -32,11 +32,10 @@ ShaderChunk[ "vt/pars_fragment" ] = [
     "inPageUv = vt.padding + inPageUv * paddingScale;",
 
     // cache texture uv
-    "uv = (page.xy + inPageUv) / vt.numPages;",
-    "return page;",
+    "return (page.xy + inPageUv) / vt.numPages;",
   "}",
 
-  "vec4 vt_textureCoordsLod(in VirtualTexture vt, inout vec2 uv, inout float lod) {",
+  "vec2 vt_textureCoordsLod(in VirtualTexture vt, in vec2 uv, inout float lod) {",
   // indirection table lookup
     "float z = clamp(floor(lod),0.,vt.maxMipMapLevel-vt.minMipMapLevel);",
     "vec4 page = vec4(texelFetch( vt.cacheIndirection, ivec2(floor(uv*exp2(vt.maxMipMapLevel-z))), int(z)));",
@@ -54,12 +53,11 @@ ShaderChunk[ "vt/pars_fragment" ] = [
     "inPageUv = clamp(inPageUv, clamping.xy, clamping.zw);",
 
     // cache texture uv
-    "uv = (page.xy + inPageUv) / vt.numPages;",
-    "return page;",
+    "return (page.xy + inPageUv) / vt.numPages;",
   "}",
 
 
-  "vec4 vt_textureCoordsGrad(in VirtualTexture vt, inout vec2 uv, inout vec2 gx, inout vec2 gy) {",
+  "vec2 vt_textureCoordsGrad(in VirtualTexture vt, inout vec2 uv, inout vec2 gx, inout vec2 gy) {",
 
     "vec2 dx = gx * vt.tileSize;",
     "vec2 dy = gy * vt.tileSize;",
@@ -96,31 +94,26 @@ ShaderChunk[ "vt/pars_fragment" ] = [
     "gy = clamp(gy, gminmax.xy, gminmax.zw);",
 
     // cache texture uv
-    "uv = (page.xy + inPageUv) / vt.numPages;",
-    "return page;",
+    "return (page.xy + inPageUv) / vt.numPages;",
   "}",
 
-  "vec4 texture(in VirtualTexture vt, in vec2 uv, out vec4 page) {",
-      "page = vt_textureCoords(vt, uv);",
+  "vec4 texture(in VirtualTexture vt, in vec2 uv) {",
+      "uv = vt_textureCoords(vt, uv);",
       "return texture(vt.texture, uv);",
   "}",
 
-  "vec4 textureLod(in VirtualTexture vt, in vec2 uv, in float lod, out vec4 page) {",
+  "vec4 textureLod(in VirtualTexture vt, in vec2 uv, in float lod) {",
       "float _lod = lod;",
-      "page = vt_textureCoordsLod(vt, uv, _lod);",
+      "uv = vt_textureCoordsLod(vt, uv, _lod);",
       "return textureLod(vt.texture, uv, _lod);",
   "}",
 
-  "vec4 textureGrad(in VirtualTexture vt, in vec2 uv, in vec2 gx, in vec2 gy, out vec4 page) {",
+  "vec4 textureGrad(in VirtualTexture vt, in vec2 uv, in vec2 gx, in vec2 gy) {",
       "vec2 _gx = gx;",
       "vec2 _gy = gy;",
-      "page = vt_textureCoordsGrad(vt, uv, _gx, _gy);",
+      "uv = vt_textureCoordsGrad(vt, uv, _gx, _gy);",
       "return textureGrad(vt.texture, uv, _gx, _gy);",
   "}",
-
-  "vec4 texture(in VirtualTexture vt, in vec2 uv) { vec4 page; return texture(vt, uv, page); }",
-  "vec4 textureLod(in VirtualTexture vt, in vec2 uv, in float lod) { vec4 page; return textureLod(vt, uv, lod, page); }",
-  "vec4 textureGrad(in VirtualTexture vt, in vec2 uv, in vec2 gx, in vec2 gy) { vec4 page; return textureGrad(vt, uv, gx, gy, page); }",
 
   "highp ivec2 textureSize(in VirtualTexture vt, in int lod) { return textureSize(vt.cacheIndirection, lod) * ivec2(vt.tileSize); }",
   "float vt_lod(in vec2 gx, in vec2 gy) { return 0.5 * log2( max(dot( gx, gx ), dot( gy, gy ) ) ); }",
