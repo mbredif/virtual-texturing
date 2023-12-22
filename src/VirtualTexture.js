@@ -23,6 +23,13 @@ export class VirtualTexture {
     this.minMipMapLevel = source.minMipMapLevel;
     this.maxMipMapLevel = source.maxMipMapLevel;
     this.tileSize = [ source.width, source.height ];
+    this.scaling = [ 1,1 ];
+    if (source.size) {
+      this.fullSize = source.size;
+      this.scaling[0] = this.fullSize[0]/(this.tileSize[0] << this.maxMipMapLevel);
+      this.scaling[1] = this.fullSize[1]/(this.tileSize[1] << this.maxMipMapLevel);
+    }
+
     this.tilePadding = source.padding;
     this.pageCount = params.pageCount;
     this.useProgressiveLoading = true;
@@ -126,6 +133,7 @@ export class VirtualTexture {
     vt.minMipMapLevel = this.minMipMapLevel;
     vt.maxMipMapLevel = this.maxMipMapLevel;
     vt.anisotropy = this.cache.texture.anisotropy;
+    vt.scaling = this.scaling;
     vt.id = 255;
 
   }

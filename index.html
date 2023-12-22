@@ -136,8 +136,9 @@
       const app = new APP();
       app.start();
 
-      var geometry = new PlaneGeometry(100, 100, 100);
       function start(conf) {
+        const aspect = conf.source.size ? conf.source.size[1]/conf.source.size[0] : 1;
+        var geometry = new PlaneGeometry(100, 100*aspect, 1);
         app.load(geometry, conf);
         app.run();
         window.vt = app.virtualTexture; // for console inspection
