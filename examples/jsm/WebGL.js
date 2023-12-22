@@ -1,4 +1,4 @@
-class WEBGL {
+class WebGL {
 
 	static isWebGLAvailable() {
 
@@ -21,6 +21,23 @@ class WEBGL {
 
 			const canvas = document.createElement( 'canvas' );
 			return !! ( window.WebGL2RenderingContext && canvas.getContext( 'webgl2' ) );
+
+		} catch ( e ) {
+
+			return false;
+
+		}
+
+	}
+
+	static isColorSpaceAvailable( colorSpace ) {
+
+		try {
+
+			const canvas = document.createElement( 'canvas' );
+			const ctx = window.WebGL2RenderingContext && canvas.getContext( 'webgl2' );
+			ctx.drawingBufferColorSpace = colorSpace;
+			return ctx.drawingBufferColorSpace === colorSpace; // deepscan-disable-line SAME_OPERAND_VALUE
 
 		} catch ( e ) {
 
@@ -88,4 +105,4 @@ class WEBGL {
 
 }
 
-export { WEBGL };
+export default WebGL;

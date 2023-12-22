@@ -50,7 +50,10 @@ function createDataTexture(image, x, y, z, l, lmax, x0, y0, pad, realTileSize, d
       }
     }
   }
-  return new DataTexture(data, width, height);
+  const dataTexture = new DataTexture(data, width, height);
+  dataTexture.needsUpdate = true;
+  dataTexture.generateMipmaps = false;
+  return dataTexture;
 }
 
 function createTexture(image, x, y, z, l, lmax, x0, y0, pad, realTileSize, debug) {
@@ -76,7 +79,10 @@ function createTexture(image, x, y, z, l, lmax, x0, y0, pad, realTileSize, debug
     context.fillText(x+','+y, 0,-5);
     context.fillText(z+'-'+l, 0, 5);
   }
-  return new CanvasTexture(canvas);
+  const canvasTexture = new CanvasTexture(canvas);
+  canvasTexture.needsUpdate = true;
+  canvasTexture.generateMipmaps = false;
+  return canvasTexture;
 }
 
 export class Cache {
@@ -256,6 +262,7 @@ export class Cache {
   copyTextureToTexture(renderer, tile, x, y, level) {
     const texture = createTexture(tile.texture.image, tile.x, tile.y, tile.z, level, this.maxLevel, tile.x0, tile.y0, this.padding, this.realTileSize, this.debug);
     const pos = new Vector2(x >> level, y >> level);
+    renderer.initTexture(renderer.properties.get( this.texture ), this.texture); // workaround to force initialization
     renderer.copyTextureToTexture(pos, texture, this.texture, level);
   }
 

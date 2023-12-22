@@ -8,9 +8,9 @@ import { TileDeterminationDebug } from '../../src/TileDeterminationDebug.js';
 import { IndirectionTableDebug } from '../../src/IndirectionTableDebug.js';
 import { CacheDebug } from '../../src/CacheDebug.js';
 import { Clock, WebGLRenderer, Scene, PerspectiveCamera, Mesh, TextureLoader } from '../jsm/three.module.js';
-import { MapControls } from '../jsm/OrbitControls.js';
+import { MapControls } from '../jsm/MapControls.js';
 import { ShaderMaterial } from '../jsm/three.module.js';
-import { WEBGL } from '../jsm/WebGL.js';
+import WebGL from '../jsm/WebGL.js';
 
 function createStats() {
   var stats = new Stats();
@@ -32,6 +32,7 @@ export class APP {
     this.controls = null;
     this.clock = new Clock();
     this.stats = createStats();
+    document.body.appendChild( this.stats.dom );
 
     this.virtualTexture = null;
     console.log("h: toggle debug last hits");
@@ -102,9 +103,9 @@ export class APP {
 
   start() {
 
-    if ( !WEBGL.isWebGL2Available() ) {
+    if ( !WebGL.isWebGL2Available() ) {
 
-      document.body.appendChild(WEBGL.getWebGL2ErrorMessage());
+      document.body.appendChild(WebGL.getWebGL2ErrorMessage());
       return false;
 
     }

@@ -20,8 +20,9 @@ export class IndirectionTable {
     this.maxLevel = maxLevel;
     this.size = 1 << maxLevel;
 
+    // create all mipmaps even if the level<minLevel are unused
     this.dataArrays = {};
-    for (let i = this.minLevel; i <= this.maxLevel; ++i)
+    for (let i = 0; i <= this.maxLevel; ++i)
       this.dataArrays[i] = new Uint8Array(1 << (2*i +2));
 
     for (let level in this.dataArrays) {
