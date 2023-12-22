@@ -73,7 +73,7 @@ export class CacheDebug {
       ctx.strokeStyle = '#00000';
       ctx.textAlign = "center";
       ctx.translate(x*sx, y*sy);
-      //if(page.image) ctx.drawImage(page.image, 0, 0, sx, sy);
+      if(page.image) ctx.drawImage(page.image, 0, 0, sx, sy);
       ctx.strokeText(page.hits, sx>>1, sy>>1);
       ctx.fillText(page.hits, sx>>1, sy>>1);
       ctx.restore();

@@ -21,6 +21,7 @@
       import { IIPSource } from './src/Sources/IIPSource.js';
       import { WMTSSource } from './src/Sources/WMTSSource.js';
       import { WMSSource } from './src/Sources/WMSSource.js';
+      import { IIIFSource } from './src/Sources/IIIFSource.js';
       import { PlaneGeometry, FloatType, RedFormat } from './examples/jsm/three.module.js';
 
       var config = [
@@ -63,6 +64,24 @@
           source: new IIPSource({
             iip: 'https://wxs.ign.fr/x7yv499pbcguxhhxh8syehwe/iipsrv.fcgi',
             id: 'DEMAT.PVA/0317-0101/IGNF_PVA_1-0__1944__C0317-0101_1944_106G2481_4026.jp2',
+            padding: 0,
+          }),
+        },
+        {
+          tileClamp: 0.5,
+          pageCount: [16,16],
+          tileDeterminationRatio: 0.125,
+          source: new IIIFSource({
+            id: 'http://codh.rois.ac.jp/pmjt/iiif/200003080/200003080_00010.tif',
+            padding: 2,
+          }),
+        },
+        {
+          tileClamp: 0.5,
+          pageCount: [16,16],
+          tileDeterminationRatio: 0.125,
+          source: new IIIFSource({
+            id: 'https://gallica.bnf.fr/iiif/ark:/12148/btv1b530951700/f1',
             padding: 0,
           }),
         },
@@ -126,7 +145,7 @@
 
       const params = new URL(document.location).searchParams;
       const conf = config[parseInt(params.get("config")) || 0];
-      if (conf.source.promise) conf.source.promise.then(() => start(conf));
+      if (conf.source.init) conf.source.init().then(() => start(conf));
       else           start(conf);
 
     </script>

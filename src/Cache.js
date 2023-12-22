@@ -238,6 +238,7 @@ export class Cache {
   reservePage (id) {
     // get the next free page
     const pageId = this.freePage(id);
+    if (pageId == undefined) return undefined;
 
     // if valid, remove it now, (otherwise handles leak)
     const page = this.pages[pageId];

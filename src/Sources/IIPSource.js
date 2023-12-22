@@ -1,10 +1,12 @@
 export class IIPSource {
   constructor(config) {
-    const scope = this;
     Object.assign(this, config);
-    const url = config.iip + '?FIF=' + config.id;
-    this.base = url+'&LYR=20&JTL=';
-    this.promise = fetch(url + '&obj=IIP,1.0&obj=Max-size&obj=Tile-size&obj=Resolution-number')
+    this.base = this.iip + '?FIF=' + this.id+'&LYR=20&JTL=';
+    if(config.info) this.load(config.info);
+  }
+  init() {
+    const scope = this;
+    return fetch(this.iip + '?FIF=' + this.id + '&obj=IIP,1.0&obj=Max-size&obj=Tile-size&obj=Resolution-number')
     .then((response) => response.text())
     .then((txt) => Object.fromEntries(txt.split(/\r?\n/)
       .map((line) => line.split(':'))
@@ -14,27 +16,28 @@ export class IIPSource {
         return [entry[0], values];
       })
     ))
-    .then((info) => {
-      scope.size = info['Max-size'];
-      const size = info['Tile-size'];
-      scope.minMipMapLevel = 0;
-      scope.maxMipMapLevel = info['Resolution-number']-1;
-      scope.width = size[0];
-      scope.height = size[1];
-      scope.numTiles = [];
-      for(let z=0; z<=scope.maxMipMapLevel; ++z) {
-        const TW = scope.width  << (scope.maxMipMapLevel - z);
-        const TH = scope.height << (scope.maxMipMapLevel - z);
-        const W = Math.ceil(scope.size[0]/TW);
-        const H = Math.ceil(scope.size[1]/TH);
-        scope.numTiles[z] = [W, H];
-      }
-    });
+    .then((info) => { scope.load(info); });
+  }
+  load(info) {
+    this.size = info['Max-size'];
+    const size = info['Tile-size'];
+    this.minMipMapLevel = 0;
+    this.maxMipMapLevel = info['Resolution-number']-1;
+    this.width = size[0];
+    this.height = size[1];
+    this.numTiles = [];
+    for(let z=0; z<=this.maxMipMapLevel; ++z) {
+      const TW = this.width  << (this.maxMipMapLevel - z);
+      const TH = this.height << (this.maxMipMapLevel - z);
+      const W = Math.ceil(this.size[0]/TW);
+      const H = Math.ceil(this.size[1]/TH);
+      this.numTiles[z] = [W, H];
+    }
   }
   getUrl(tile) {
     const W = this.numTiles[tile.z][0];
     const H = this.numTiles[tile.z][1];
-    if ( tile.x >= W || tile.y >= H ) return null;
+    if ( tile.x >= W || tile.y >= H ) return undefined;
     return this.base+tile.z+','+(tile.x+W*tile.y);
   }
 }
