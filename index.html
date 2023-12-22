@@ -18,98 +18,10 @@
 
     <script type="module">
       import { APP } from './examples/jsm/Main.js';
+      import { IIPSource } from './src/Sources/IIPSource.js';
+      import { WMTSSource } from './src/Sources/WMTSSource.js';
+      import { WMSSource } from './src/Sources/WMSSource.js';
       import { PlaneGeometry, FloatType, RedFormat } from './examples/jsm/three.module.js';
-
-      const app = new APP();
-
-      app.start();
-
-      class WMSSource {
-        constructor(config) {
-          Object.assign(this, config);
-          this.base = config.wms + '?Service=WMS&Request=GetMap'
-          + '&Version=' + (config.version || '1.3.0')
-          + '&Layers=' + config.layer
-          + '&Format=' + (config.mimeType || 'image/jpeg')
-          + '&CRS=' + config.crs
-          + '&Width=' + (this.width+2*this.padding)
-          + '&Height='+ (this.height+2*this.padding)
-          + '&BBox=';
-        }
-        getUrl(tile) {
-          const bbox = this.bbox;
-          const padding = this.padding;
-          const w = (bbox[2]-bbox[0]) / (1 << tile.z);
-          const h = (bbox[3]-bbox[1]) / (1 << tile.z);
-          const x = bbox[0]+w*tile.x;
-          const y = bbox[3]-h*tile.y;
-          const a = w*padding/this.width;
-          const b = h*padding/this.height;
-          return this.base+(y-h-b)+','+(x-a)+','+(y+b)+','+(x+w+a);
-        }
-      }
-
-      class WMTSSource {
-        constructor(config) {
-          Object.assign(this, config);
-          this.base = config.wmts + '?Service=WMTS&Request=GetTile'
-          + '&Version=' + (config.version || '1.0.0')
-          + '&Layer=' + config.layer
-          + '&Format=' + (config.mimeType || 'image/jpeg')
-          + '&Style=' + (config.style || 'normal')
-          + '&TileMatrixSet=' + config.tileMatrixSet
-          + '&TileMatrix=';
-        }
-        getUrl(tile) {
-          if (this.tileMatrixSetLimits) {
-            const limits = this.tileMatrixSetLimits[tile.z];
-            if(!limits || tile.x < limits.minTileCol || tile.x > limits.maxTileCol || tile.y < limits.minTileRow || tile.y > limits.maxTileRow)
-              return undefined;
-          }
-          return this.base+tile.z+'&TileRow='+tile.y+'&TileCol='+tile.x;
-        }
-      }
-
-      class IIPSource {
-        constructor(config) {
-          const scope = this;
-          Object.assign(this, config);
-          const url = config.iip + '?FIF=' + config.id;
-          this.base = url+'&LYR=20&JTL=';
-          this.promise = fetch(url + '&obj=IIP,1.0&obj=Max-size&obj=Tile-size&obj=Resolution-number')
-          .then((response) => response.text())
-          .then((txt) => Object.fromEntries(txt.split(/\r?\n/)
-            .map((line) => line.split(':'))
-            .filter((line) => line.length == 2)
-            .map((entry) => {
-              const values = entry[1].split(/\s+/).map((v) => parseInt(v, 10));
-              return [entry[0], values];
-            })
-          ))
-          .then((info) => {
-            scope.size = info['Max-size'];
-            const size = info['Tile-size'];
-            scope.minMipMapLevel = 0;
-            scope.maxMipMapLevel = info['Resolution-number']-1;
-            scope.width = size[0];
-            scope.height = size[1];
-            scope.numTiles = [];
-            for(let z=0; z<=scope.maxMipMapLevel; ++z) {
-              const TW = scope.width  << (scope.maxMipMapLevel - z);
-              const TH = scope.height << (scope.maxMipMapLevel - z);
-              const W = Math.ceil(scope.size[0]/TW);
-              const H = Math.ceil(scope.size[1]/TH);
-              scope.numTiles[z] = [W, H];
-            }
-          });
-        }
-        getUrl(tile) {
-          const W = this.numTiles[tile.z][0];
-          const H = this.numTiles[tile.z][1];
-          if ( tile.x >= W || tile.y >= H ) return null;
-          return this.base+tile.z+','+(tile.x+W*tile.y);
-        }
-      }
 
       var config = [
         {
@@ -202,11 +114,14 @@
         }
       ];
 
+      const app = new APP();
+      app.start();
+
       var geometry = new PlaneGeometry(100, 100, 100);
       function start(conf) {
         app.load(geometry, conf);
         app.run();
-        window.vt = app.virtualTexture;
+        window.vt = app.virtualTexture; // for console inspection
       }
 
       const params = new URL(document.location).searchParams;
